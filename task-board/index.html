@@ -1,0 +1,1151 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Kanban – Práce / Soukromé</title>
+
+  <style>
+    :root{
+      --bg: #f3f4f7;
+      --panel: rgba(255,255,255,.78);
+      --border: rgba(15, 23, 42, .10);
+      --text: #0b1020;
+      --muted: rgba(15, 23, 42, .58);
+      --shadow: 0 18px 40px rgba(2, 6, 23, .10);
+      --shadow2: 0 6px 18px rgba(2, 6, 23, .08);
+      --radius-xl: 22px;
+
+      --accent: #8b5cf6;
+      --accent2:#a855f7;
+
+      --todoDot:#f59e0b;
+      --doingDot:#3b82f6;
+      --doneDot:#22c55e;
+
+      --low:#22c55e;
+      --mid:#f59e0b;
+      --high:#ef4444;
+
+      --danger:#ef4444;
+    }
+
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; }
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      color:var(--text);
+      background:
+        radial-gradient(1100px 600px at 15% -10%, rgba(139,92,246,.18), transparent 60%),
+        radial-gradient(1000px 540px at 90% 5%, rgba(59,130,246,.12), transparent 55%),
+        radial-gradient(900px 520px at 70% 110%, rgba(34,197,94,.10), transparent 55%),
+        var(--bg);
+    }
+
+    .wrap{
+      max-width: 1220px;
+      margin: 0 auto;
+      padding: 28px 18px 42px;
+    }
+
+    header{
+      display:flex;
+      align-items:flex-end;
+      justify-content:space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .title h1{
+      margin:0;
+      font-size: 38px;
+      letter-spacing:-.03em;
+      font-weight: 800;
+    }
+    .title .date{
+      margin-top:6px;
+      font-size: 14px;
+      color:var(--muted);
+    }
+
+    .glass{
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow2);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+    }
+
+    .topGrid{
+      display:grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 14px;
+      margin: 16px 0 14px;
+    }
+    @media (max-width: 980px){
+      header{ flex-direction:column; align-items:flex-start; }
+      .topGrid{ grid-template-columns: 1fr; }
+    }
+
+    .scopeBar{
+      padding: 12px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+    }
+    .seg{
+      display:flex;
+      gap: 10px;
+      width: 100%;
+      padding: 6px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.88);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.35);
+      max-width: 560px;
+    }
+    .seg button{
+      flex:1;
+      border:0;
+      cursor:pointer;
+      border-radius: 999px;
+      padding: 12px 14px;
+      font-size: 14px;
+      font-weight: 700;
+      color: rgba(15, 23, 42, .65);
+      background: transparent;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap: 10px;
+      transition: .15s ease;
+    }
+    .seg button.active{
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff;
+      box-shadow: 0 10px 20px rgba(139,92,246,.25);
+    }
+    .toolbar{
+      display:flex;
+      gap:8px;
+      justify-content:flex-end;
+      align-items:center;
+    }
+    .btnGhost{
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.86);
+      color: rgba(15,23,42,.72);
+      padding: 10px 12px;
+      border-radius: 14px;
+      cursor:pointer;
+      font-size: 13px;
+      font-weight: 650;
+      transition: .15s ease;
+    }
+    .btnGhost:hover{ transform: translateY(-1px); box-shadow: var(--shadow2); }
+    .btnGhost.danger:hover{ border-color: rgba(239,68,68,.25); color: var(--danger); }
+
+    .stats{
+      padding: 12px;
+      display:grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+    @media (max-width: 700px){
+      .stats{ grid-template-columns: 1fr; }
+    }
+    .stat{
+      background: rgba(255,255,255,.90);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 12px 14px;
+      box-shadow: var(--shadow2);
+    }
+    .stat .label{
+      display:flex;
+      align-items:center;
+      gap: 10px;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing:.04em;
+      color: rgba(15,23,42,.55);
+    }
+    .dot{ width: 10px; height:10px; border-radius:999px; box-shadow: 0 6px 16px rgba(0,0,0,.12); }
+    .stat .value{
+      margin-top: 6px;
+      font-size: 30px;
+      font-weight: 900;
+      letter-spacing:-.02em;
+    }
+
+    .newTask{ padding: 14px; }
+    .newRow{ display:grid; grid-template-columns: 1fr; gap: 10px; }
+    .newLine{
+      display:flex; align-items:center; gap: 10px;
+      padding: 10px 12px;
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.90);
+      box-shadow: var(--shadow2);
+    }
+    .plus{
+      width: 28px; height:28px; border-radius: 12px;
+      display:grid; place-items:center;
+      background: rgba(139,92,246,.16);
+      color: var(--accent);
+      font-weight: 900;
+      font-size: 18px;
+      user-select:none;
+    }
+    input, textarea, select{
+      border: 0;
+      outline: none;
+      background: transparent;
+      font-size: 14px;
+      color: rgba(15,23,42,.9);
+      width: 100%;
+    }
+    textarea{
+      resize: vertical;
+      min-height: 68px;
+      padding: 10px 12px;
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.88);
+      box-shadow: var(--shadow2);
+    }
+    .mini{
+      display:flex; align-items:center; gap: 10px;
+      flex-wrap: wrap;
+    }
+    .field{
+      display:flex; align-items:center; gap: 8px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.88);
+      box-shadow: var(--shadow2);
+    }
+    .field label{
+      font-size: 12px;
+      color: rgba(15,23,42,.55);
+      font-weight: 750;
+      white-space: nowrap;
+    }
+    .prioDot{
+      width:10px;height:10px;border-radius:999px;
+      box-shadow: 0 6px 16px rgba(0,0,0,.12);
+    }
+    .btnPrimary{
+      border:0; cursor:pointer;
+      border-radius: 16px;
+      padding: 11px 14px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff;
+      font-weight: 850;
+      font-size: 14px;
+      box-shadow: 0 16px 30px rgba(139,92,246,.25);
+      transition: .15s ease;
+      white-space: nowrap;
+    }
+    .btnPrimary:disabled{ opacity:.55; cursor:not-allowed; box-shadow: none; }
+    .btnPrimary:hover{ transform: translateY(-1px); }
+
+    .hint{
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 8px;
+      padding-left: 4px;
+    }
+
+    .board{
+      margin-top: 14px;
+      display:grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+    }
+    @media (max-width: 980px){
+      .board{ grid-template-columns: 1fr; }
+    }
+    .col{
+      padding: 12px;
+      border-radius: var(--radius-xl);
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.55);
+      box-shadow: var(--shadow2);
+      min-height: 250px;
+    }
+    .colHeader{
+      display:flex; align-items:center; justify-content:space-between;
+      margin-bottom: 10px; gap: 10px;
+    }
+    .colHeader .left{ display:flex;align-items:center;gap:10px; }
+    .colTitle{
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing:.08em;
+      color: rgba(15,23,42,.62);
+    }
+    .colCount{
+      font-size: 12px;
+      font-weight: 850;
+      color: rgba(15,23,42,.60);
+      background: rgba(15,23,42,.06);
+      border: 1px solid rgba(15,23,42,.08);
+      padding: 3px 8px;
+      border-radius: 999px;
+    }
+    .dropZone{
+      display:grid;
+      gap: 10px;
+      padding: 6px;
+      min-height: 170px;
+      border-radius: 18px;
+    }
+    .col.over{
+      outline: 2px solid rgba(139,92,246,.22);
+      outline-offset: 2px;
+    }
+
+    .task{
+      background: rgba(255,255,255,.94);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 12px 12px 10px;
+      box-shadow: var(--shadow2);
+      cursor: grab;
+      user-select: none;
+      position: relative;
+      transition: transform .08s ease, box-shadow .15s ease;
+    }
+    .task:hover{ transform: translateY(-1px); box-shadow: var(--shadow); }
+    .task:active{ cursor:grabbing; }
+    .task.dragging{ opacity:.55; transform: rotate(.2deg) scale(.995); }
+
+    .taskTop{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:10px;
+    }
+    .taskTitle{
+      font-weight: 850;
+      font-size: 14px;
+      line-height: 1.2;
+      margin:0;
+      word-break: break-word;
+      flex:1;
+    }
+
+    /* Chip line: keep compact */
+    .meta{
+      margin-top: 8px;
+      display:flex;
+      align-items:center;
+      gap: 8px;
+      flex-wrap: wrap; /* with shorter labels this usually stays on one line */
+    }
+    .chip{
+      display:inline-flex;
+      align-items:center;
+      gap: 6px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(15,23,42,.10);
+      background: rgba(15,23,42,.04);
+      font-size: 11px;
+      font-weight: 750;
+      color: rgba(15,23,42,.72);
+      white-space: nowrap;
+    }
+    .chip .miniDot{ width:8px;height:8px;border-radius:999px; }
+
+    .note{
+      margin-top: 8px;
+      font-size: 12px;
+      color: rgba(15,23,42,.58);
+      line-height: 1.35;
+      white-space: pre-wrap;
+    }
+
+    /* small icon buttons */
+    .iconBtn{
+      position:absolute;
+      top: 10px;
+      width: 30px;
+      height: 30px;
+      border-radius: 12px;
+      border: 1px solid rgba(15,23,42,.10);
+      background: rgba(255,255,255,.92);
+      cursor:pointer;
+      opacity: 0;
+      transition: .15s ease;
+      display:grid;
+      place-items:center;
+    }
+    .task:hover .iconBtn{ opacity: 1; }
+
+    .editBtn{ right: 46px; }
+    .delBtn{ right: 10px; }
+
+    .iconBtn:hover{ box-shadow: var(--shadow2); transform: translateY(-1px); }
+    .delBtn:hover{
+      background: rgba(239,68,68,.12);
+      border-color: rgba(239,68,68,.25);
+    }
+
+    .iconSvg{ width: 16px; height: 16px; stroke: rgba(15,23,42,.60); }
+    .delBtn .iconSvg{ stroke: rgba(220,38,38,.85); }
+    .editBtn:hover .iconSvg{ stroke: rgba(139,92,246,.90); }
+
+    .empty{
+      text-align:center;
+      color: rgba(15,23,42,.45);
+      font-weight: 750;
+      padding: 18px 12px;
+      border: 1px dashed rgba(15,23,42,.18);
+      border-radius: 16px;
+      background: rgba(255,255,255,.50);
+    }
+
+    /* modal */
+    .modalBackdrop{
+      position: fixed;
+      inset: 0;
+      background: rgba(2, 6, 23, .45);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding: 18px;
+      z-index: 50;
+    }
+    .modalBackdrop.show{ display:flex; }
+    .modal{
+      width: min(720px, 100%);
+      background: rgba(255,255,255,.92);
+      border: 1px solid rgba(255,255,255,.25);
+      border-radius: 22px;
+      box-shadow: 0 30px 80px rgba(0,0,0,.25);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      overflow:hidden;
+    }
+    .modalHead{
+      padding: 14px 16px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 12px;
+      border-bottom: 1px solid rgba(15,23,42,.10);
+    }
+    .modalHead .h{ font-weight: 900; letter-spacing:-.02em; }
+    .modalBody{ padding: 14px 16px 16px; display:grid; gap: 10px; }
+    .modalFooter{
+      padding: 14px 16px;
+      display:flex;
+      justify-content:flex-end;
+      gap: 10px;
+      border-top: 1px solid rgba(15,23,42,.10);
+      background: rgba(255,255,255,.70);
+    }
+
+    .footerNote{
+      margin-top: 16px;
+      font-size: 12px;
+      color: rgba(15,23,42,.45);
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <header>
+      <div class="title">
+        <h1 id="pageTitle">Pracovní úkoly</h1>
+        <div class="date" id="today"></div>
+      </div>
+
+      <div class="toolbar">
+        <button class="btnGhost" id="btnExport" type="button">Export</button>
+        <button class="btnGhost danger" id="btnClear" type="button">Vymazat vše</button>
+      </div>
+    </header>
+
+    <section class="topGrid">
+      <div class="glass scopeBar">
+        <div class="seg" role="tablist" aria-label="Scope">
+          <button id="btnPersonal" type="button">👤 Osobní</button>
+          <button id="btnWork" class="active" type="button">💼 Pracovní</button>
+        </div>
+      </div>
+
+      <div class="glass stats">
+        <div class="stat">
+          <div class="label"><span class="dot" style="background:var(--todoDot)"></span>ČEKÁ</div>
+          <div class="value" id="statTodo">0</div>
+        </div>
+        <div class="stat">
+          <div class="label"><span class="dot" style="background:var(--doingDot)"></span>DĚLÁM</div>
+          <div class="value" id="statDoing">0</div>
+        </div>
+        <div class="stat">
+          <div class="label"><span class="dot" style="background:var(--doneDot)"></span>HOTOVO</div>
+          <div class="value" id="statDone">0</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="glass newTask">
+      <div class="newRow">
+        <div class="newLine">
+          <div class="plus">＋</div>
+          <input id="inTitle" placeholder="Nový úkol…" autocomplete="off"/>
+          <button class="btnPrimary" id="btnAdd" disabled type="button">Přidat</button>
+        </div>
+
+        <div class="mini">
+          <div class="field" style="min-width: 190px;">
+            <label for="inDue">Termín</label>
+            <input id="inDue" type="date"/>
+          </div>
+
+          <div class="field" style="min-width: 220px;">
+            <label for="inPrio">Priorita</label>
+            <span class="prioDot" id="prioDot" style="background:var(--low)"></span>
+            <select id="inPrio">
+              <option value="low" selected>Nízká</option>
+              <option value="mid">Střední</option>
+              <option value="high">Vysoká</option>
+            </select>
+          </div>
+
+          <div style="flex:1; min-width: 260px;">
+            <textarea id="inNote" placeholder="Poznámka (volitelně)…"></textarea>
+          </div>
+        </div>
+
+        <div class="hint">
+          Tip: Termín vybereš kliknutím do políčka Datum → otevře se kalendář. Úkoly přetahuj myší mezi sloupci. Klik na kartu nebo tužku = editace.
+        </div>
+      </div>
+    </section>
+
+    <section class="board" aria-label="Kanban">
+      <div class="col" data-col="todo">
+        <div class="colHeader">
+          <div class="left">
+            <span class="dot" style="background:var(--todoDot)"></span>
+            <div class="colTitle">K UDELÁNÍ</div>
+          </div>
+          <div class="colCount" id="countTodo">0</div>
+        </div>
+        <div class="dropZone" id="zoneTodo"></div>
+      </div>
+
+      <div class="col" data-col="doing">
+        <div class="colHeader">
+          <div class="left">
+            <span class="dot" style="background:var(--doingDot)"></span>
+            <div class="colTitle">DĚLÁM</div>
+          </div>
+          <div class="colCount" id="countDoing">0</div>
+        </div>
+        <div class="dropZone" id="zoneDoing"></div>
+      </div>
+
+      <div class="col" data-col="done">
+        <div class="colHeader">
+          <div class="left">
+            <span class="dot" style="background:var(--doneDot)"></span>
+            <div class="colTitle">HOTOVO</div>
+          </div>
+          <div class="colCount" id="countDone">0</div>
+        </div>
+        <div class="dropZone" id="zoneDone"></div>
+      </div>
+    </section>
+
+    <div class="footerNote">
+      Ukládání: <b>localStorage</b> (v tomto prohlížeči).
+    </div>
+  </div>
+
+  <!-- Modal for editing -->
+  <div class="modalBackdrop" id="modalBackdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-label="Editace úkolu">
+      <div class="modalHead">
+        <div class="h">Upravit úkol</div>
+        <button class="btnGhost danger" id="btnCloseModal" type="button">Zavřít</button>
+      </div>
+
+      <div class="modalBody">
+        <div class="field">
+          <label for="mTitle">Název</label>
+          <input id="mTitle" />
+        </div>
+
+        <div class="mini">
+          <div class="field" style="min-width: 190px;">
+            <label for="mDue">Termín</label>
+            <input id="mDue" type="date"/>
+          </div>
+
+          <div class="field" style="min-width: 220px;">
+            <label for="mPrio">Priorita</label>
+            <span class="prioDot" id="mPrioDot" style="background:var(--low)"></span>
+            <select id="mPrio">
+              <option value="low">Nízká</option>
+              <option value="mid">Střední</option>
+              <option value="high">Vysoká</option>
+            </select>
+          </div>
+
+          <div class="field" style="min-width: 220px;">
+            <label for="mStatus">Stav</label>
+            <select id="mStatus">
+              <option value="todo">K udělání</option>
+              <option value="doing">Dělám</option>
+              <option value="done">Hotovo</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="mini">
+          <div class="field" style="min-width: 240px;">
+            <label>Vznik</label>
+            <input id="mCreated" disabled />
+          </div>
+          <div class="field" style="min-width: 240px;">
+            <label>Trvání (dny)</label>
+            <input id="mDuration" disabled />
+          </div>
+        </div>
+
+        <textarea id="mNote" placeholder="Poznámka…"></textarea>
+      </div>
+
+      <div class="modalFooter">
+        <button class="btnGhost danger" id="btnDelete" type="button">Smazat</button>
+        <button class="btnPrimary" id="btnSave" type="button">Uložit</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // =========================
+    // Data model:
+    // task = { id, scope, status, title, note, due, prio, order, createdAt }
+    // createdAt = timestamp (ms) -> vznik úkolu
+    // trvání = počet dní od createdAt do dneška
+    // =========================
+    const KEY = "kanban.better.shortchips.v1";
+
+    const $ = (sel) => document.querySelector(sel);
+    const $$ = (sel) => Array.from(document.querySelectorAll(sel));
+
+    const zones = {
+      todo: $("#zoneTodo"),
+      doing: $("#zoneDoing"),
+      done: $("#zoneDone"),
+    };
+
+    const stats = {
+      todo: $("#statTodo"),
+      doing: $("#statDoing"),
+      done: $("#statDone"),
+      cTodo: $("#countTodo"),
+      cDoing: $("#countDoing"),
+      cDone: $("#countDone"),
+    };
+
+    const ui = {
+      pageTitle: $("#pageTitle"),
+      today: $("#today"),
+      btnWork: $("#btnWork"),
+      btnPersonal: $("#btnPersonal"),
+      btnAdd: $("#btnAdd"),
+      inTitle: $("#inTitle"),
+      inNote: $("#inNote"),
+      inDue: $("#inDue"),
+      inPrio: $("#inPrio"),
+      prioDot: $("#prioDot"),
+      btnExport: $("#btnExport"),
+      btnClear: $("#btnClear"),
+
+      modalBackdrop: $("#modalBackdrop"),
+      btnCloseModal: $("#btnCloseModal"),
+      btnSave: $("#btnSave"),
+      btnDelete: $("#btnDelete"),
+      mTitle: $("#mTitle"),
+      mNote: $("#mNote"),
+      mDue: $("#mDue"),
+      mPrio: $("#mPrio"),
+      mPrioDot: $("#mPrioDot"),
+      mStatus: $("#mStatus"),
+      mCreated: $("#mCreated"),
+      mDuration: $("#mDuration"),
+    };
+
+    let scope = "work";
+    let tasks = load();
+    let editingId = null;
+
+    // Backward compatibility: ensure createdAt exists
+    tasks = tasks.map(t => ({
+      ...t,
+      createdAt: typeof t.createdAt === "number" ? t.createdAt : Date.now()
+    }));
+    save();
+
+    function load(){
+      try{
+        const raw = localStorage.getItem(KEY);
+        return raw ? JSON.parse(raw) : [];
+      }catch(e){
+        return [];
+      }
+    }
+    function save(){
+      localStorage.setItem(KEY, JSON.stringify(tasks));
+    }
+
+    function uuid(){
+      return (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2));
+    }
+
+    function csDateLong(d){
+      return new Intl.DateTimeFormat("cs-CZ", {
+        weekday:"long", year:"numeric", month:"long", day:"numeric"
+      }).format(d);
+    }
+
+    // Short date dd.mm. (no year) for chips
+    function ddmmFromISO(iso){
+      if(!iso) return "";
+      const [y,m,dd] = iso.split("-").map(Number);
+      if(!y||!m||!dd) return iso;
+      return `${String(dd).padStart(2,"0")}.${String(m).padStart(2,"0")}.`;
+    }
+    function ddmmFromTs(ts){
+      const d = new Date(ts);
+      return `${String(d.getDate()).padStart(2,"0")}.${String(d.getMonth()+1).padStart(2,"0")}.`;
+    }
+
+    // Full date dd.mm.yyyy for modal
+    function fullFromTs(ts){
+      return new Intl.DateTimeFormat("cs-CZ", {
+        day:"2-digit", month:"2-digit", year:"numeric"
+      }).format(new Date(ts));
+    }
+    function fullFromISO(iso){
+      if(!iso) return "";
+      const [y,m,dd] = iso.split("-").map(Number);
+      if(!y||!m||!dd) return iso;
+      return `${String(dd).padStart(2,"0")}. ${String(m).padStart(2,"0")}. ${y}`;
+    }
+
+    function prioText(p){
+      return p === "high" ? "Vysoká" : p === "mid" ? "Střední" : "Nízká";
+    }
+    function prioColor(p){
+      return p === "high" ? "var(--high)" : p === "mid" ? "var(--mid)" : "var(--low)";
+    }
+
+    function scoped(){
+      return tasks.filter(t => t.scope === scope);
+    }
+
+    function setScope(next){
+      scope = next;
+      ui.btnWork.classList.toggle("active", scope === "work");
+      ui.btnPersonal.classList.toggle("active", scope === "personal");
+      ui.pageTitle.textContent = (scope === "work" ? "Pracovní úkoly" : "Osobní úkoly");
+      render();
+    }
+
+    function updateAddState(){
+      ui.btnAdd.disabled = !ui.inTitle.value.trim();
+    }
+
+    function setPrioDot(){
+      ui.prioDot.style.background = prioColor(ui.inPrio.value);
+    }
+    function setModalPrioDot(){
+      ui.mPrioDot.style.background = prioColor(ui.mPrio.value);
+    }
+
+    function maxOrder(status){
+      const arr = tasks.filter(t => t.scope === scope && t.status === status);
+      return arr.length ? Math.max(...arr.map(t => t.order ?? 0)) : 0;
+    }
+
+    // duration in whole days
+    function durationDays(createdAt){
+      const start = new Date(createdAt);
+      const today = new Date();
+      const a = new Date(start.getFullYear(), start.getMonth(), start.getDate()).getTime();
+      const b = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+      return Math.max(0, Math.round((b - a) / 86400000));
+    }
+
+    function render(){
+      Object.values(zones).forEach(z => z.innerHTML = "");
+
+      const list = scoped();
+      const grouped = { todo: [], doing: [], done: [] };
+
+      list
+        .slice()
+        .sort((a,b) => (a.order ?? a.createdAt) - (b.order ?? b.createdAt))
+        .forEach(t => grouped[t.status].push(t));
+
+      for(const status of ["todo","doing","done"]){
+        const arr = grouped[status];
+
+        if(status === "todo"){ stats.todo.textContent = arr.length; stats.cTodo.textContent = arr.length; }
+        if(status === "doing"){ stats.doing.textContent = arr.length; stats.cDoing.textContent = arr.length; }
+        if(status === "done"){ stats.done.textContent = arr.length; stats.cDone.textContent = arr.length; }
+
+        if(arr.length === 0){
+          const empty = document.createElement("div");
+          empty.className = "empty";
+          empty.textContent = "Nic neprobíhá";
+          zones[status].appendChild(empty);
+        }else{
+          arr.forEach(t => zones[status].appendChild(taskNode(t)));
+        }
+      }
+
+      initDnD();
+    }
+
+    function taskNode(t){
+      const card = document.createElement("div");
+      card.className = "task";
+      card.draggable = true;
+      card.dataset.id = t.id;
+
+      const editBtn = document.createElement("button");
+      editBtn.className = "iconBtn editBtn";
+      editBtn.type = "button";
+      editBtn.title = "Upravit";
+      editBtn.innerHTML = pencilSvg();
+      editBtn.addEventListener("click", (e) => { e.stopPropagation(); openModal(t.id); });
+
+      const delBtn = document.createElement("button");
+      delBtn.className = "iconBtn delBtn";
+      delBtn.type = "button";
+      delBtn.title = "Smazat";
+      delBtn.innerHTML = trashSvg();
+      delBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        tasks = tasks.filter(x => x.id !== t.id);
+        save(); render();
+      });
+
+      const top = document.createElement("div");
+      top.className = "taskTop";
+
+      const title = document.createElement("p");
+      title.className = "taskTitle";
+      title.textContent = t.title;
+
+      top.appendChild(title);
+      card.appendChild(top);
+
+      // ✅ SHORT CHIPS (one-line friendly)
+      const meta = document.createElement("div");
+      meta.className = "meta";
+
+      const chipDue = document.createElement("span");
+      chipDue.className = "chip";
+      chipDue.innerHTML = `📅 ${t.due ? ddmmFromISO(t.due) : "—"}`;
+
+      const chipPrio = document.createElement("span");
+      chipPrio.className = "chip";
+      chipPrio.innerHTML = `<span class="miniDot" style="background:${prioColor(t.prio)}"></span>${prioText(t.prio)}`;
+
+      const chipCreated = document.createElement("span");
+      chipCreated.className = "chip";
+      chipCreated.innerHTML = `🗓️ ${ddmmFromTs(t.createdAt)}`;
+
+      const chipDuration = document.createElement("span");
+      chipDuration.className = "chip";
+      chipDuration.innerHTML = `⏱️ ${durationDays(t.createdAt)}d`;
+
+      meta.appendChild(chipDue);
+      meta.appendChild(chipPrio);
+      meta.appendChild(chipCreated);
+      meta.appendChild(chipDuration);
+
+      card.appendChild(meta);
+
+      if(t.note){
+        const note = document.createElement("div");
+        note.className = "note";
+        note.textContent = t.note;
+        card.appendChild(note);
+      }
+
+      card.appendChild(editBtn);
+      card.appendChild(delBtn);
+
+      card.addEventListener("click", () => openModal(t.id));
+
+      card.addEventListener("dragstart", (ev) => {
+        card.classList.add("dragging");
+        ev.dataTransfer.setData("text/plain", t.id);
+        ev.dataTransfer.effectAllowed = "move";
+      });
+      card.addEventListener("dragend", () => {
+        card.classList.remove("dragging");
+        $$(".col").forEach(c => c.classList.remove("over"));
+      });
+
+      return card;
+    }
+
+    function pencilSvg(){
+      return `
+      <svg class="iconSvg" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 20h9"/>
+        <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4 11.5-11.5z"/>
+      </svg>`;
+    }
+
+    function trashSvg(){
+      return `
+      <svg class="iconSvg" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 6h18"/>
+        <path d="M8 6V4h8v2"/>
+        <path d="M19 6l-1 14H6L5 6"/>
+        <path d="M10 11v6"/>
+        <path d="M14 11v6"/>
+      </svg>`;
+    }
+
+    function addTask(){
+      const title = ui.inTitle.value.trim();
+      if(!title) return;
+
+      const status = "todo";
+      const order = maxOrder(status) + 1;
+
+      tasks.unshift({
+        id: uuid(),
+        scope,
+        status,
+        title,
+        note: ui.inNote.value.trim() || "",
+        due: ui.inDue.value || "",
+        prio: ui.inPrio.value || "low",
+        order,
+        createdAt: Date.now(),
+      });
+
+      ui.inTitle.value = "";
+      ui.inNote.value = "";
+      ui.inDue.value = "";
+      ui.inPrio.value = "low";
+      setPrioDot();
+      updateAddState();
+
+      save();
+      render();
+      ui.inTitle.focus();
+    }
+
+    function reorderWithin(status, orderedIds){
+      const base = Date.now();
+      orderedIds.forEach((id, i) => {
+        const t = tasks.find(x => x.id === id);
+        if(t && t.scope === scope && t.status === status){
+          t.order = base + i;
+        }
+      });
+    }
+
+    // Drag & Drop (HTML5)
+    let dndInitialized = false;
+    function initDnD(){
+      if(dndInitialized) return;
+
+      $$(".col").forEach(col => {
+        col.addEventListener("dragover", (e) => {
+          e.preventDefault();
+          col.classList.add("over");
+          e.dataTransfer.dropEffect = "move";
+          const zone = col.querySelector(".dropZone");
+          const dragging = document.querySelector(".task.dragging");
+          if(!dragging || !zone) return;
+
+          const after = getDragAfterElement(zone, e.clientY);
+          if(after == null){
+            zone.appendChild(dragging);
+          }else{
+            zone.insertBefore(dragging, after);
+          }
+        });
+
+        col.addEventListener("dragleave", () => col.classList.remove("over"));
+
+        col.addEventListener("drop", (e) => {
+          e.preventDefault();
+          col.classList.remove("over");
+
+          const id = e.dataTransfer.getData("text/plain");
+          const status = col.getAttribute("data-col");
+          const t = tasks.find(x => x.id === id);
+          if(!t) return;
+
+          t.status = status;
+
+          const zone = col.querySelector(".dropZone");
+          const ids = Array.from(zone.querySelectorAll(".task"))
+            .map(n => n.dataset.id)
+            .filter(Boolean);
+
+          reorderWithin(status, ids);
+
+          save();
+          render();
+        });
+      });
+
+      dndInitialized = true;
+    }
+
+    function getDragAfterElement(container, y){
+      const draggableElements = [...container.querySelectorAll(".task:not(.dragging)")];
+      return draggableElements.reduce((closest, child) => {
+        const box = child.getBoundingClientRect();
+        const offset = y - box.top - box.height / 2;
+        if(offset < 0 && offset > closest.offset){
+          return { offset, element: child };
+        }else{
+          return closest;
+        }
+      }, { offset: Number.NEGATIVE_INFINITY, element: null }).element;
+    }
+
+    // Modal
+    function openModal(id){
+      const t = tasks.find(x => x.id === id);
+      if(!t) return;
+      editingId = id;
+
+      ui.mTitle.value = t.title || "";
+      ui.mNote.value = t.note || "";
+      ui.mDue.value = t.due || "";
+      ui.mPrio.value = t.prio || "low";
+      ui.mStatus.value = t.status || "todo";
+
+      // full info in modal
+      ui.mCreated.value = fullFromTs(t.createdAt);
+      ui.mDuration.value = String(durationDays(t.createdAt));
+
+      setModalPrioDot();
+
+      ui.modalBackdrop.classList.add("show");
+      ui.modalBackdrop.setAttribute("aria-hidden", "false");
+    }
+
+    function closeModal(){
+      ui.modalBackdrop.classList.remove("show");
+      ui.modalBackdrop.setAttribute("aria-hidden", "true");
+      editingId = null;
+    }
+
+    function saveModal(){
+      if(!editingId) return;
+      const t = tasks.find(x => x.id === editingId);
+      if(!t) return;
+
+      const newStatus = ui.mStatus.value;
+
+      t.title = ui.mTitle.value.trim() || t.title;
+      t.note = ui.mNote.value.trim();
+      t.due = ui.mDue.value;
+      t.prio = ui.mPrio.value;
+
+      if(t.status !== newStatus){
+        t.status = newStatus;
+        t.order = maxOrder(newStatus) + 1;
+      }
+
+      save();
+      closeModal();
+      render();
+    }
+
+    function deleteModal(){
+      if(!editingId) return;
+      tasks = tasks.filter(x => x.id !== editingId);
+      save();
+      closeModal();
+      render();
+    }
+
+    // Export / Clear
+    async function exportJSON(){
+      const data = JSON.stringify(tasks, null, 2);
+      try{
+        await navigator.clipboard.writeText(data);
+        alert("Export zkopírován do schránky (JSON).");
+      }catch(e){
+        const w = window.open();
+        w.document.write("<pre>" + data.replace(/[<>&]/g, s => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[s])) + "</pre>");
+        w.document.close();
+      }
+    }
+
+    function clearAll(){
+      if(confirm("Opravdu smazat všechny úkoly (Práce i Osobní)?")){
+        tasks = [];
+        save();
+        render();
+      }
+    }
+
+    // Init
+    ui.today.textContent = csDateLong(new Date());
+
+    ui.inTitle.addEventListener("input", updateAddState);
+    ui.btnAdd.addEventListener("click", addTask);
+    ui.inTitle.addEventListener("keydown", (e) => {
+      if(e.key === "Enter"){ e.preventDefault(); addTask(); }
+    });
+
+    ui.inPrio.addEventListener("change", setPrioDot);
+
+    ui.btnWork.addEventListener("click", ()=> setScope("work"));
+    ui.btnPersonal.addEventListener("click", ()=> setScope("personal"));
+
+    ui.btnExport.addEventListener("click", exportJSON);
+    ui.btnClear.addEventListener("click", clearAll);
+
+    ui.btnCloseModal.addEventListener("click", closeModal);
+    ui.modalBackdrop.addEventListener("click", (e) => { if(e.target === ui.modalBackdrop) closeModal(); });
+    window.addEventListener("keydown", (e) => { if(e.key === "Escape" && ui.modalBackdrop.classList.contains("show")) closeModal(); });
+
+    ui.mPrio.addEventListener("change", setModalPrioDot);
+    ui.btnSave.addEventListener("click", saveModal);
+    ui.btnDelete.addEventListener("click", deleteModal);
+
+    // seed demo (only if empty)
+    if(tasks.length === 0){
+      tasks = [
+        { id: uuid(), scope:"work", status:"todo", title:"ukol1", note:"", due:"2026-05-08", prio:"low", order: 1, createdAt: Date.now()-86400000*2 },
+      ];
+      save();
+    }
+
+    setScope("work");
+    setPrioDot();
+    updateAddState();
+    render();
+  </script>
+</body>
+</html>
