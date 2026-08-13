@@ -1,0 +1,695 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Kalendář – Směny</title>
+
+  <style>
+    :root{
+      --bg: #f2f2f7;
+      --panel: rgba(255,255,255,.86);
+      --border: rgba(60, 60, 67, .13);
+      --text: #1c1c1e;
+      --muted: rgba(60, 60, 67, .60);
+      --shadow: 0 14px 30px rgba(0, 0, 0, .10);
+      --shadow2: 0 2px 10px rgba(0, 0, 0, .06);
+      --radius-xl: 20px;
+
+      --accent: #007aff;
+      --accent2: #0a84ff;
+      --danger: #ff3b30;
+
+      --roBg: #d1d1d6;
+      --nBg: #ffd60a;
+      --dovBg: #fff3c4;
+      --weekendBg: #c62828;
+    }
+
+    *{ box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
+    html,body{ height:100%; }
+    body{
+      margin:0;
+      font-family: -apple-system, ui-sans-serif, system-ui, "SF Pro Text", "Segoe UI", Roboto, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      color:var(--text);
+      background: var(--bg);
+    }
+
+    .wrap{
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 28px 18px 42px;
+    }
+
+    header{
+      display:flex;
+      align-items:flex-end;
+      justify-content:space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    @media (max-width: 700px){
+      header{ flex-direction:column; align-items:flex-start; }
+    }
+
+    .titleRow{
+      display:flex;
+      align-items:center;
+      gap: 14px;
+    }
+    .backBtn{
+      width: 40px; height: 40px; flex-shrink: 0;
+      border-radius: 14px;
+      display:grid; place-items:center;
+      background: rgba(255,255,255,.86);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow2);
+      color: var(--text);
+      text-decoration:none;
+      transition: .15s ease;
+    }
+    .backBtn:hover{ transform: translateY(-1px); box-shadow: var(--shadow); }
+    .backBtn:active{ transform: scale(.96); }
+    .backBtn .iconSvg{ stroke: var(--text); }
+
+    .title h1{
+      margin:0;
+      font-size: 34px;
+      letter-spacing:-.03em;
+      font-weight: 800;
+    }
+    .title .sub{
+      margin-top:4px;
+      font-size: 13px;
+      color:var(--muted);
+    }
+
+    .toolbar{ display:flex; gap:8px; }
+    .btnGhost{
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.86);
+      color: rgba(28,28,30,.75);
+      padding: 10px 12px;
+      border-radius: 14px;
+      cursor:pointer;
+      font-size: 13px;
+      font-weight: 650;
+      transition: .15s ease;
+    }
+    .btnGhost:hover{ transform: translateY(-1px); box-shadow: var(--shadow2); }
+    .btnPrimary{
+      border:0; cursor:pointer;
+      border-radius: 14px;
+      padding: 11px 16px;
+      background: var(--accent);
+      color: #fff;
+      font-weight: 650;
+      font-size: 14px;
+      box-shadow: 0 2px 10px rgba(0,122,255,.28);
+      transition: .15s ease;
+      white-space: nowrap;
+    }
+    .btnPrimary:hover{ background: var(--accent2); }
+    .btnPrimary:active{ transform: scale(.97); }
+    .btnGhost.danger:hover{ border-color: rgba(255,59,48,.25); color: var(--danger); }
+
+    .glass{
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow2);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+    }
+
+    .monthNav{
+      display:flex; align-items:center; justify-content:space-between;
+      padding: 12px 16px;
+      margin-top: 16px;
+    }
+    .navBtn{
+      width: 36px; height: 36px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.92);
+      box-shadow: var(--shadow2);
+      font-size: 18px;
+      font-weight: 800;
+      cursor: pointer;
+      color: var(--text);
+      transition: .15s ease;
+    }
+    .navBtn:hover{ transform: translateY(-1px); box-shadow: var(--shadow); }
+    .navBtn:active{ transform: scale(.94); }
+    .monthTitle{
+      font-size: 19px;
+      font-weight: 800;
+      letter-spacing:.03em;
+    }
+
+    .legend{
+      display:flex; gap: 16px; flex-wrap: wrap;
+      padding: 10px 16px;
+      margin-top: 12px;
+    }
+    .legendItem{
+      display:flex; align-items:center; gap: 6px;
+      font-size: 12px; font-weight: 700;
+      color: var(--muted);
+    }
+    .legendDot{ width: 12px; height:12px; border-radius: 4px; flex-shrink:0; }
+
+    .calendarGrid{
+      margin-top: 14px;
+      display:grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 6px;
+    }
+
+    .weekHeader{
+      text-align:center;
+      font-size: 11px;
+      font-weight: 850;
+      letter-spacing:.06em;
+      color: var(--muted);
+      padding: 6px 0;
+    }
+    .weekHeader.weekend{
+      color: #fff;
+      background: var(--weekendBg);
+      border-radius: 10px;
+    }
+
+    .dayCell{
+      min-height: 76px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.94);
+      box-shadow: var(--shadow2);
+      padding: 6px 6px 8px;
+      display:flex;
+      flex-direction:column;
+      cursor:pointer;
+      transition: transform .08s ease, box-shadow .15s ease;
+    }
+    .dayCell:hover{ transform: translateY(-1px); box-shadow: var(--shadow); }
+    .dayCell.faded{ opacity:.38; cursor:default; box-shadow:none; }
+    .dayCell.faded:hover{ transform:none; box-shadow:none; }
+    .dayCell.today{ box-shadow: inset 0 0 0 2px var(--accent); }
+
+    .dayNum{ font-size: 13px; font-weight: 750; color: var(--text); }
+    .dayCell.weekend .dayNum{ color: var(--danger); }
+
+    .dayNote{
+      margin-top: 3px;
+      font-size: 10px;
+      line-height: 1.25;
+      color: var(--muted);
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+    }
+
+    .dayCode{
+      margin-top: auto;
+      align-self: center;
+      font-size: 15px;
+      font-weight: 850;
+    }
+
+    .code-ro{ background: var(--roBg); }
+    .code-n{ background: var(--nBg); }
+    .code-dov{ background: var(--dovBg); }
+
+    @media (max-width: 480px){
+      .dayCell{ min-height: 58px; padding: 4px; border-radius: 10px; gap: 2px; }
+      .dayNum{ font-size: 11px; }
+      .dayNote{ font-size: 8px; -webkit-line-clamp: 1; }
+      .dayCode{ font-size: 12px; }
+      .calendarGrid{ gap: 4px; }
+    }
+
+    /* modal */
+    .modalBackdrop{
+      position: fixed; inset: 0;
+      background: rgba(2, 6, 23, .45);
+      display:none;
+      align-items:center; justify-content:center;
+      padding: 18px;
+      z-index: 50;
+    }
+    .modalBackdrop.show{ display:flex; }
+    .modal{
+      width: min(560px, 100%);
+      background: rgba(255,255,255,.96);
+      border: 1px solid rgba(255,255,255,.25);
+      border-radius: 22px;
+      box-shadow: 0 30px 80px rgba(0,0,0,.25);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      overflow:hidden;
+    }
+    .modalHead{
+      padding: 14px 16px;
+      display:flex; align-items:center; justify-content:space-between;
+      gap: 12px;
+      border-bottom: 1px solid rgba(15,23,42,.10);
+    }
+    .modalHead .h{ font-weight: 800; letter-spacing:-.02em; }
+    .modalBody{ padding: 14px 16px 16px; display:grid; gap: 10px; }
+    .modalFooter{
+      padding: 14px 16px;
+      display:flex; justify-content:flex-end; gap: 10px;
+      border-top: 1px solid rgba(15,23,42,.10);
+      background: rgba(255,255,255,.70);
+    }
+    .field{
+      display:flex; align-items:center; gap: 8px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.88);
+      box-shadow: var(--shadow2);
+    }
+    .field label{
+      font-size: 12px; color: rgba(28,28,30,.55);
+      font-weight: 750; white-space: nowrap;
+    }
+    input, textarea{
+      border: 0; outline: none; background: transparent;
+      font-size: 14px; color: rgba(28,28,30,.9);
+      width: 100%; font-family: inherit;
+    }
+    textarea{
+      resize: vertical; min-height: 68px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.88);
+      box-shadow: var(--shadow2);
+    }
+    #importText{ min-height: 200px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
+    .hint{ font-size: 12px; color: var(--muted); }
+  </style>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    // =========================
+    // Supabase DB (shared) — shifts
+    // =========================
+    const SUPABASE_URL = "https://nvniycrgdfvgphcvptsh.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_gkHDuvNM75l5krS0vPQegA_FaQzI0jG";
+    const BOARD_ID = "rodina";
+
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    async function dbFetchShifts(){
+      const { data, error } = await supabaseClient
+        .from('shifts')
+        .select('*')
+        .eq('board_id', BOARD_ID);
+
+      if(error){
+        console.error('dbFetchShifts:', error);
+        return [];
+      }
+      return (data || []).map(s => ({
+        id: s.id,
+        date: s.date,
+        code: s.code || '',
+        note: s.note || '',
+      }));
+    }
+
+    async function dbInsertShift(s){
+      const { error } = await supabaseClient.from('shifts').insert({
+        id: s.id,
+        board_id: BOARD_ID,
+        date: s.date,
+        code: s.code || null,
+        note: s.note || null,
+      });
+      if(error) console.error('dbInsertShift:', error);
+    }
+
+    async function dbUpdateShift(s){
+      const { error } = await supabaseClient
+        .from('shifts')
+        .update({ code: s.code || null, note: s.note || null })
+        .eq('id', s.id);
+      if(error) console.error('dbUpdateShift:', error);
+    }
+
+    async function dbDeleteShift(id){
+      const { error } = await supabaseClient.from('shifts').delete().eq('id', id);
+      if(error) console.error('dbDeleteShift:', error);
+    }
+
+    function setupRealtime(){
+      supabaseClient
+        .channel('shifts-live')
+        .on('postgres_changes', {
+          event: '*',
+          schema: 'public',
+          table: 'shifts',
+          filter: `board_id=eq.${BOARD_ID}`
+        }, async () => {
+          await refreshShifts();
+        })
+        .subscribe();
+    }
+  </script>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="titleRow">
+        <a class="backBtn" href="/" title="Zpět na Moje aplikace" aria-label="Zpět na Moje aplikace">
+          <svg class="iconSvg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M15 18l-6-6 6-6"/>
+          </svg>
+        </a>
+        <div class="title">
+          <h1>Kalendář</h1>
+          <div class="sub">Směny a poznámky</div>
+        </div>
+      </div>
+
+      <div class="toolbar">
+        <button class="btnGhost" id="btnImport" type="button">Import</button>
+      </div>
+    </header>
+
+    <section class="glass monthNav">
+      <button class="navBtn" id="btnPrevMonth" type="button" aria-label="Předchozí měsíc">‹</button>
+      <div class="monthTitle" id="monthTitle">–</div>
+      <button class="navBtn" id="btnNextMonth" type="button" aria-label="Další měsíc">›</button>
+    </section>
+
+    <section class="glass legend">
+      <span class="legendItem"><span class="legendDot" style="background:var(--roBg)"></span>RO</span>
+      <span class="legendItem"><span class="legendDot" style="background:var(--nBg)"></span>N</span>
+      <span class="legendItem"><span class="legendDot" style="background:var(--dovBg)"></span>Dov</span>
+      <span class="legendItem">✉️ poznámka</span>
+    </section>
+
+    <section class="calendarGrid" id="grid"></section>
+  </div>
+
+  <!-- Modal: edit day -->
+  <div class="modalBackdrop" id="modalBackdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-label="Upravit den">
+      <div class="modalHead">
+        <div class="h" id="modalDate">Den</div>
+        <button class="btnGhost danger" id="btnCloseModal" type="button">Zavřít</button>
+      </div>
+      <div class="modalBody">
+        <div class="field">
+          <label for="mCode">Kód</label>
+          <input id="mCode" placeholder="RO / N / Dov / vlastní…" autocomplete="off"/>
+        </div>
+        <textarea id="mNote" placeholder="Poznámka…"></textarea>
+      </div>
+      <div class="modalFooter">
+        <button class="btnGhost danger" id="btnDeleteShift" type="button">Smazat</button>
+        <button class="btnPrimary" id="btnSaveShift" type="button">Uložit</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: import -->
+  <div class="modalBackdrop" id="importBackdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-label="Import dat">
+      <div class="modalHead">
+        <div class="h">Import dat</div>
+        <button class="btnGhost danger" id="btnCloseImport" type="button">Zavřít</button>
+      </div>
+      <div class="modalBody">
+        <div class="hint">Vlož pole záznamů ve formátu JSON, např.: <code>[{"date":"2026-01-02","code":"RO"},{"date":"2026-01-06","note":"hory"}]</code></div>
+        <textarea id="importText" placeholder='[{"date":"2026-01-02","code":"RO"}]'></textarea>
+      </div>
+      <div class="modalFooter">
+        <button class="btnPrimary" id="btnRunImport" type="button">Importovat</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const $ = (sel) => document.querySelector(sel);
+
+    const MONTH_NAMES = ["LEDEN","ÚNOR","BŘEZEN","DUBEN","KVĚTEN","ČERVEN","ČERVENEC","SRPEN","ZÁŘÍ","ŘÍJEN","LISTOPAD","PROSINEC"];
+    const WEEKDAY_NAMES = ["PO","ÚT","ST","ČT","PÁ","SO","NE"];
+
+    const ui = {
+      grid: $("#grid"),
+      monthTitle: $("#monthTitle"),
+      btnPrevMonth: $("#btnPrevMonth"),
+      btnNextMonth: $("#btnNextMonth"),
+      btnImport: $("#btnImport"),
+
+      modalBackdrop: $("#modalBackdrop"),
+      modalDate: $("#modalDate"),
+      mCode: $("#mCode"),
+      mNote: $("#mNote"),
+      btnCloseModal: $("#btnCloseModal"),
+      btnSaveShift: $("#btnSaveShift"),
+      btnDeleteShift: $("#btnDeleteShift"),
+
+      importBackdrop: $("#importBackdrop"),
+      importText: $("#importText"),
+      btnCloseImport: $("#btnCloseImport"),
+      btnRunImport: $("#btnRunImport"),
+    };
+
+    let viewYear, viewMonth;
+    let shifts = [];
+    let editingDate = null;
+
+    function uuid(){
+      return (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2));
+    }
+
+    function pad(n){ return String(n).padStart(2, "0"); }
+    function isoDate(y, m, d){ return `${y}-${pad(m + 1)}-${pad(d)}`; }
+
+    function isToday(iso){
+      const t = new Date();
+      return iso === isoDate(t.getFullYear(), t.getMonth(), t.getDate());
+    }
+
+    function formatCzechDate(iso){
+      const [y, m, d] = iso.split("-").map(Number);
+      return new Intl.DateTimeFormat("cs-CZ", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).format(new Date(y, m - 1, d));
+    }
+
+    function normalizeCode(code){
+      const c = (code || "").trim().toUpperCase();
+      if(c === "RO") return "ro";
+      if(c === "N") return "n";
+      if(c === "DOV") return "dov";
+      return null;
+    }
+
+    function monthGridDates(y, m){
+      const first = new Date(y, m, 1);
+      const startOffset = (first.getDay() + 6) % 7;
+      const start = new Date(y, m, 1 - startOffset);
+
+      const last = new Date(y, m + 1, 0);
+      const endOffset = 6 - ((last.getDay() + 6) % 7);
+      const end = new Date(y, m + 1, last.getDate() + endOffset);
+
+      const dates = [];
+      const cur = new Date(start);
+      while(cur <= end){
+        dates.push(new Date(cur));
+        cur.setDate(cur.getDate() + 1);
+      }
+      return dates;
+    }
+
+    function render(){
+      ui.monthTitle.textContent = `${MONTH_NAMES[viewMonth]} ${viewYear}`;
+      ui.grid.innerHTML = "";
+
+      WEEKDAY_NAMES.forEach((w, i) => {
+        const el = document.createElement("div");
+        el.className = "weekHeader" + (i >= 5 ? " weekend" : "");
+        el.textContent = w;
+        ui.grid.appendChild(el);
+      });
+
+      monthGridDates(viewYear, viewMonth).forEach(d => ui.grid.appendChild(dayCell(d)));
+    }
+
+    function dayCell(d){
+      const iso = isoDate(d.getFullYear(), d.getMonth(), d.getDate());
+      const inMonth = d.getMonth() === viewMonth;
+      const dow = (d.getDay() + 6) % 7;
+      const isWeekend = dow >= 5;
+      const shift = shifts.find(s => s.date === iso);
+
+      const cell = document.createElement("div");
+      cell.className = "dayCell";
+      if(!inMonth) cell.classList.add("faded");
+      if(isWeekend) cell.classList.add("weekend");
+      if(isToday(iso)) cell.classList.add("today");
+      const codeKey = shift?.code ? normalizeCode(shift.code) : null;
+      if(codeKey) cell.classList.add("code-" + codeKey);
+
+      const num = document.createElement("div");
+      num.className = "dayNum";
+      num.textContent = d.getDate();
+      cell.appendChild(num);
+
+      if(shift?.note){
+        const note = document.createElement("div");
+        note.className = "dayNote";
+        note.textContent = "✉️ " + shift.note;
+        cell.appendChild(note);
+      }
+
+      if(shift?.code){
+        const code = document.createElement("div");
+        code.className = "dayCode";
+        code.textContent = shift.code;
+        cell.appendChild(code);
+      }
+
+      if(inMonth){
+        cell.addEventListener("click", () => openDayModal(iso));
+      }
+
+      return cell;
+    }
+
+    function setMonth(y, m){
+      viewYear = y;
+      viewMonth = m;
+      render();
+    }
+
+    function openDayModal(iso){
+      editingDate = iso;
+      const shift = shifts.find(s => s.date === iso);
+      ui.modalDate.textContent = formatCzechDate(iso);
+      ui.mCode.value = shift?.code || "";
+      ui.mNote.value = shift?.note || "";
+      ui.modalBackdrop.classList.add("show");
+      ui.modalBackdrop.setAttribute("aria-hidden", "false");
+    }
+
+    function closeModal(){
+      ui.modalBackdrop.classList.remove("show");
+      ui.modalBackdrop.setAttribute("aria-hidden", "true");
+      editingDate = null;
+    }
+
+    async function saveShift(){
+      if(!editingDate) return;
+      const code = ui.mCode.value.trim();
+      const note = ui.mNote.value.trim();
+      const existing = shifts.find(s => s.date === editingDate);
+
+      if(!code && !note){
+        if(existing) await dbDeleteShift(existing.id);
+      }else if(existing){
+        await dbUpdateShift({ id: existing.id, code, note });
+      }else{
+        await dbInsertShift({ id: uuid(), date: editingDate, code, note });
+      }
+
+      closeModal();
+      await refreshShifts();
+    }
+
+    async function deleteShift(){
+      if(!editingDate) return;
+      const existing = shifts.find(s => s.date === editingDate);
+      if(existing) await dbDeleteShift(existing.id);
+      closeModal();
+      await refreshShifts();
+    }
+
+    function openImport(){
+      ui.importBackdrop.classList.add("show");
+      ui.importBackdrop.setAttribute("aria-hidden", "false");
+    }
+    function closeImport(){
+      ui.importBackdrop.classList.remove("show");
+      ui.importBackdrop.setAttribute("aria-hidden", "true");
+    }
+
+    async function runImport(){
+      let data;
+      try{
+        data = JSON.parse(ui.importText.value);
+      }catch(e){
+        alert("Neplatný JSON.");
+        return;
+      }
+      if(!Array.isArray(data)){
+        alert("Očekávám pole záznamů, např. [{...}, {...}].");
+        return;
+      }
+
+      for(const item of data){
+        if(!item.date) continue;
+        const existing = shifts.find(s => s.date === item.date);
+        const code = item.code || "";
+        const note = item.note || "";
+        if(existing){
+          await dbUpdateShift({ id: existing.id, code, note });
+        }else{
+          await dbInsertShift({ id: uuid(), date: item.date, code, note });
+        }
+      }
+
+      ui.importText.value = "";
+      closeImport();
+      await refreshShifts();
+    }
+
+    async function refreshShifts(){
+      shifts = await dbFetchShifts();
+      render();
+    }
+
+    // Init
+    ui.btnPrevMonth.addEventListener("click", () => {
+      let m = viewMonth - 1, y = viewYear;
+      if(m < 0){ m = 11; y--; }
+      setMonth(y, m);
+    });
+    ui.btnNextMonth.addEventListener("click", () => {
+      let m = viewMonth + 1, y = viewYear;
+      if(m > 11){ m = 0; y++; }
+      setMonth(y, m);
+    });
+
+    ui.btnCloseModal.addEventListener("click", closeModal);
+    ui.modalBackdrop.addEventListener("click", (e) => { if(e.target === ui.modalBackdrop) closeModal(); });
+    ui.btnSaveShift.addEventListener("click", saveShift);
+    ui.btnDeleteShift.addEventListener("click", deleteShift);
+
+    ui.btnImport.addEventListener("click", openImport);
+    ui.btnCloseImport.addEventListener("click", closeImport);
+    ui.importBackdrop.addEventListener("click", (e) => { if(e.target === ui.importBackdrop) closeImport(); });
+    ui.btnRunImport.addEventListener("click", runImport);
+
+    window.addEventListener("keydown", (e) => {
+      if(e.key !== "Escape") return;
+      if(ui.modalBackdrop.classList.contains("show")) closeModal();
+      if(ui.importBackdrop.classList.contains("show")) closeImport();
+    });
+
+    const today = new Date();
+    (async () => {
+      await refreshShifts();
+      setMonth(today.getFullYear(), today.getMonth());
+      setupRealtime();
+    })();
+  </script>
+</body>
+</html>
