@@ -1,13 +1,132 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="cs">
 <head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>Moje aplikace - Ladislav</title>
+
+  <style>
+    :root{
+      --bg: #f2f2f7;
+      --panel: rgba(255,255,255,.86);
+      --border: rgba(60, 60, 67, .13);
+      --text: #1c1c1e;
+      --muted: rgba(60, 60, 67, .60);
+      --shadow: 0 14px 30px rgba(0, 0, 0, .10);
+      --shadow2: 0 2px 10px rgba(0, 0, 0, .06);
+      --radius-xl: 20px;
+      --accent: #007aff;
+      --accent2: #0a84ff;
+    }
+
+    *{ box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
+    html,body{ height:100%; }
+    body{
+      margin:0;
+      font-family: -apple-system, ui-sans-serif, system-ui, "SF Pro Text", "Segoe UI", Roboto, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      color:var(--text);
+      background: var(--bg);
+    }
+
+    .wrap{
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 48px 18px 42px;
+    }
+
+    header h1{
+      margin:0;
+      font-size: 38px;
+      letter-spacing:-.03em;
+      font-weight: 800;
+    }
+    header .sub{
+      margin-top: 8px;
+      font-size: 15px;
+      color: var(--muted);
+    }
+
+    .listTitle{
+      margin: 32px 0 10px;
+      padding-left: 4px;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing:.08em;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+
+    .appList{
+      display:grid;
+      gap: 10px;
+    }
+
+    .appCard{
+      display:flex;
+      align-items:center;
+      gap: 14px;
+      padding: 14px 16px;
+      background: rgba(255,255,255,.94);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow2);
+      text-decoration: none;
+      color: inherit;
+      transition: transform .08s ease, box-shadow .15s ease;
+    }
+    .appCard:hover{ transform: translateY(-1px); box-shadow: var(--shadow); }
+    .appCard:active{ transform: scale(.99); }
+
+    .appIcon{
+      width: 42px; height:42px; border-radius: 12px;
+      display:grid; place-items:center;
+      background: rgba(0,122,255,.13);
+      color: var(--accent);
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+
+    .appInfo{ flex:1; min-width:0; }
+    .appName{ font-weight: 700; font-size: 15px; }
+    .appDesc{ margin-top: 2px; font-size: 13px; color: var(--muted); }
+
+    .chevron{
+      width: 18px; height: 18px;
+      stroke: rgba(60,60,67,.35);
+      flex-shrink: 0;
+    }
+
+    .empty{
+      text-align:center;
+      color: var(--muted);
+      font-weight: 600;
+      padding: 24px 12px;
+      border: 1px dashed var(--border);
+      border-radius: var(--radius-xl);
+      background: rgba(255,255,255,.5);
+    }
+  </style>
 </head>
 <body>
-  <h1>Moje aplikace - Ladislav</h1>
-Zde postupně budou přibývat moje aplikace.
-  <ul>
-    <li><a href="/task-board">Task Board</a></li>
-  </ul>
+  <div class="wrap">
+    <header>
+      <h1>Moje aplikace</h1>
+      <div class="sub">Ladislav — zde postupně budou přibývat další aplikace.</div>
+    </header>
+
+    <div class="listTitle">Aplikace</div>
+    <div class="appList">
+      <a class="appCard" href="/task-board">
+        <div class="appIcon">📋</div>
+        <div class="appInfo">
+          <div class="appName">Task Board</div>
+          <div class="appDesc">Sdílený Kanban pro pracovní a osobní úkoly</div>
+        </div>
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 18l6-6-6-6"/>
+        </svg>
+      </a>
+    </div>
+  </div>
 </body>
 </html>
