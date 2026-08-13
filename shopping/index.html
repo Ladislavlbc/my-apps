@@ -1,0 +1,632 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Nákupní seznam</title>
+
+  <style>
+    :root{
+      --bg: #f2f2f7;
+      --panel: rgba(255,255,255,.86);
+      --border: rgba(60, 60, 67, .13);
+      --text: #1c1c1e;
+      --muted: rgba(60, 60, 67, .60);
+      --shadow: 0 14px 30px rgba(0, 0, 0, .10);
+      --shadow2: 0 2px 10px rgba(0, 0, 0, .06);
+      --radius-xl: 20px;
+
+      --accent: #007aff;
+      --accent2: #0a84ff;
+      --danger: #ff3b30;
+    }
+
+    *{ box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
+    html,body{ height:100%; }
+    body{
+      margin:0;
+      font-family: -apple-system, ui-sans-serif, system-ui, "SF Pro Text", "Segoe UI", Roboto, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      color:var(--text);
+      background: var(--bg);
+    }
+
+    .wrap{
+      max-width: 1220px;
+      margin: 0 auto;
+      padding: 28px 18px 42px;
+    }
+
+    header{
+      display:flex;
+      align-items:flex-end;
+      justify-content:space-between;
+      gap: 12px;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
+    }
+    @media (max-width: 700px){
+      header{ flex-direction:column; align-items:flex-start; }
+    }
+
+    .titleRow{ display:flex; align-items:center; gap: 14px; }
+    .backBtn{
+      width: 40px; height: 40px; flex-shrink: 0;
+      border-radius: 14px;
+      display:grid; place-items:center;
+      background: rgba(255,255,255,.86);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow2);
+      color: var(--text);
+      text-decoration:none;
+      transition: .15s ease;
+    }
+    .backBtn:hover{ transform: translateY(-1px); box-shadow: var(--shadow); }
+    .backBtn:active{ transform: scale(.96); }
+    .backBtn .iconSvg{ stroke: var(--text); }
+
+    .title h1{ margin:0; font-size: 34px; letter-spacing:-.03em; font-weight: 800; }
+    .title .sub{ margin-top:4px; font-size: 13px; color:var(--muted); }
+
+    .toolbar{ display:flex; gap:8px; flex-wrap: wrap; }
+    .btnGhost{
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.86);
+      color: rgba(28,28,30,.75);
+      padding: 10px 12px;
+      border-radius: 14px;
+      cursor:pointer;
+      font-size: 13px;
+      font-weight: 650;
+      transition: .15s ease;
+    }
+    .btnGhost:hover{ transform: translateY(-1px); box-shadow: var(--shadow2); }
+    .btnGhost.danger:hover{ border-color: rgba(255,59,48,.25); color: var(--danger); }
+
+    .btnPrimary{
+      border:0; cursor:pointer;
+      border-radius: 14px;
+      padding: 11px 16px;
+      background: var(--accent);
+      color: #fff;
+      font-weight: 650;
+      font-size: 14px;
+      box-shadow: 0 2px 10px rgba(0,122,255,.28);
+      transition: .15s ease;
+      white-space: nowrap;
+    }
+    .btnPrimary:disabled{ opacity:.4; cursor:not-allowed; box-shadow:none; }
+    .btnPrimary:hover{ background: var(--accent2); }
+    .btnPrimary:active{ transform: scale(.97); }
+
+    .blocksGrid{
+      display:grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 14px;
+      align-items: start;
+    }
+
+    .block{
+      background: rgba(255,255,255,.92);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow2);
+      padding: 14px;
+    }
+
+    .blockHead{
+      display:flex; align-items:center; justify-content:space-between;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .blockName{ font-weight: 800; font-size: 15px; letter-spacing:-.01em; }
+    .blockRight{ display:flex; align-items:center; gap: 6px; }
+    .blockCount{
+      font-size: 11px; font-weight: 800;
+      color: rgba(28,28,30,.55);
+      background: rgba(28,28,30,.06);
+      border: 1px solid rgba(28,28,30,.08);
+      padding: 3px 8px;
+      border-radius: 999px;
+    }
+    .delBlockBtn{
+      width: 26px; height: 26px;
+      border-radius: 9px;
+      border: 1px solid rgba(28,28,30,.10);
+      background: rgba(255,255,255,.9);
+      cursor:pointer;
+      display:grid; place-items:center;
+      transition: .15s ease;
+    }
+    .delBlockBtn:hover{ background: rgba(255,59,48,.12); border-color: rgba(255,59,48,.25); }
+    .delBlockBtn .iconSvg{ width:14px; height:14px; stroke: rgba(255,59,48,.85); }
+
+    .addRow{
+      display:flex; align-items:center; gap: 6px;
+      margin-bottom: 10px;
+    }
+    .addRow input{
+      flex:1;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.9);
+      border-radius: 12px;
+      padding: 9px 10px;
+      font-size: 13px;
+      outline:none;
+      font-family: inherit;
+      color: rgba(28,28,30,.9);
+    }
+    .addItemBtn{
+      width: 32px; height: 32px; flex-shrink:0;
+      border-radius: 11px;
+      border:0;
+      background: var(--accent);
+      color:#fff;
+      font-weight: 800;
+      font-size: 16px;
+      cursor:pointer;
+      display:grid; place-items:center;
+    }
+    .addItemBtn:disabled{ opacity:.4; cursor:not-allowed; }
+    .addItemBtn:hover:not(:disabled){ background: var(--accent2); }
+
+    .itemList{ display:grid; gap: 6px; }
+    .item{
+      display:flex; align-items:center; gap: 8px;
+      padding: 7px 8px;
+      border-radius: 11px;
+      transition: background .1s ease;
+    }
+    .item:hover{ background: rgba(28,28,30,.04); }
+
+    .checkBtn{
+      width: 20px; height: 20px; flex-shrink:0;
+      border-radius: 50%;
+      border: 2px solid rgba(28,28,30,.22);
+      background: transparent;
+      cursor:pointer;
+      display:grid; place-items:center;
+      padding:0;
+    }
+    .checkBtn.checked{ background: var(--accent); border-color: var(--accent); }
+    .checkBtn svg{ width: 11px; height: 11px; stroke:#fff; opacity:0; }
+    .checkBtn.checked svg{ opacity:1; }
+
+    .itemTitle{
+      flex:1; min-width:0;
+      font-size: 13.5px;
+      word-break: break-word;
+    }
+    .item.checked .itemTitle{ text-decoration: line-through; color: var(--muted); }
+
+    .delItemBtn{
+      width: 22px; height: 22px; flex-shrink:0;
+      border:0; background:transparent;
+      color: rgba(28,28,30,.32);
+      cursor:pointer;
+      font-size: 16px; line-height:1;
+      border-radius: 8px;
+    }
+    .delItemBtn:hover{ background: rgba(255,59,48,.12); color: var(--danger); }
+
+    .emptyBlock{
+      font-size: 12px; color: var(--muted);
+      padding: 8px 4px;
+    }
+
+    .emptyAll{
+      text-align:center;
+      color: var(--muted);
+      font-weight: 600;
+      padding: 40px 16px;
+      border: 1px dashed var(--border);
+      border-radius: var(--radius-xl);
+      background: rgba(255,255,255,.5);
+      grid-column: 1 / -1;
+    }
+
+    /* modal */
+    .modalBackdrop{
+      position: fixed; inset: 0;
+      background: rgba(2, 6, 23, .45);
+      display:none;
+      align-items:center; justify-content:center;
+      padding: 18px;
+      z-index: 50;
+    }
+    .modalBackdrop.show{ display:flex; }
+    .modal{
+      width: min(420px, 100%);
+      background: rgba(255,255,255,.96);
+      border: 1px solid rgba(255,255,255,.25);
+      border-radius: 22px;
+      box-shadow: 0 30px 80px rgba(0,0,0,.25);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      overflow:hidden;
+    }
+    .modalHead{
+      padding: 14px 16px;
+      display:flex; align-items:center; justify-content:space-between;
+      gap: 12px;
+      border-bottom: 1px solid rgba(15,23,42,.10);
+    }
+    .modalHead .h{ font-weight: 800; letter-spacing:-.02em; }
+    .modalBody{ padding: 14px 16px 16px; display:grid; gap: 10px; }
+    .modalFooter{
+      padding: 14px 16px;
+      display:flex; justify-content:flex-end; gap: 10px;
+      border-top: 1px solid rgba(15,23,42,.10);
+      background: rgba(255,255,255,.70);
+    }
+    .field{
+      display:flex; align-items:center; gap: 8px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.88);
+      box-shadow: var(--shadow2);
+    }
+    .field label{ font-size: 12px; color: rgba(28,28,30,.55); font-weight: 750; white-space: nowrap; }
+    .field input{
+      border: 0; outline: none; background: transparent;
+      font-size: 14px; color: rgba(28,28,30,.9);
+      width: 100%; font-family: inherit;
+    }
+  </style>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    // =========================
+    // Supabase DB (shared) — shopping list
+    // =========================
+    const SUPABASE_URL = "https://nvniycrgdfvgphcvptsh.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_gkHDuvNM75l5krS0vPQegA_FaQzI0jG";
+    const BOARD_ID = "rodina";
+
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    async function dbFetchCategories(){
+      const { data, error } = await supabaseClient
+        .from('shopping_categories')
+        .select('*')
+        .eq('board_id', BOARD_ID)
+        .order('order', { ascending: true });
+      if(error){ console.error('dbFetchCategories:', error); return []; }
+      return (data || []).map(c => ({ id: c.id, name: c.name, order: c.order ?? 0 }));
+    }
+
+    async function dbInsertCategory(cat){
+      const { error } = await supabaseClient.from('shopping_categories').insert({
+        id: cat.id, board_id: BOARD_ID, name: cat.name, order: cat.order ?? Date.now(),
+      });
+      if(error) console.error('dbInsertCategory:', error);
+    }
+
+    async function dbDeleteCategory(id){
+      const { error } = await supabaseClient.from('shopping_categories').delete().eq('id', id);
+      if(error) console.error('dbDeleteCategory:', error);
+    }
+
+    async function dbFetchItems(){
+      const { data, error } = await supabaseClient
+        .from('shopping_items')
+        .select('*')
+        .eq('board_id', BOARD_ID)
+        .order('order', { ascending: true });
+      if(error){ console.error('dbFetchItems:', error); return []; }
+      return (data || []).map(i => ({
+        id: i.id, categoryId: i.category_id, title: i.title,
+        checked: !!i.checked, order: i.order ?? 0,
+      }));
+    }
+
+    async function dbInsertItem(item){
+      const { error } = await supabaseClient.from('shopping_items').insert({
+        id: item.id, board_id: BOARD_ID, category_id: item.categoryId,
+        title: item.title, checked: item.checked ?? false, order: item.order ?? Date.now(),
+      });
+      if(error) console.error('dbInsertItem:', error);
+    }
+
+    async function dbUpdateItem(item){
+      const { error } = await supabaseClient
+        .from('shopping_items')
+        .update({ checked: item.checked })
+        .eq('id', item.id);
+      if(error) console.error('dbUpdateItem:', error);
+    }
+
+    async function dbDeleteItem(id){
+      const { error } = await supabaseClient.from('shopping_items').delete().eq('id', id);
+      if(error) console.error('dbDeleteItem:', error);
+    }
+
+    async function dbDeleteCheckedItems(ids){
+      if(!ids.length) return;
+      const { error } = await supabaseClient.from('shopping_items').delete().in('id', ids);
+      if(error) console.error('dbDeleteCheckedItems:', error);
+    }
+
+    function setupRealtime(){
+      supabaseClient
+        .channel('shopping-live')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'shopping_categories', filter: `board_id=eq.${BOARD_ID}` }, refreshAll)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'shopping_items', filter: `board_id=eq.${BOARD_ID}` }, refreshAll)
+        .subscribe();
+    }
+
+    async function refreshAll(){
+      categories = await dbFetchCategories();
+      items = await dbFetchItems();
+      render();
+    }
+  </script>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="titleRow">
+        <a class="backBtn" href="/" title="Zpět na Moje aplikace" aria-label="Zpět na Moje aplikace">
+          <svg class="iconSvg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M15 18l-6-6 6-6"/>
+          </svg>
+        </a>
+        <div class="title">
+          <h1>Nákupní seznam</h1>
+          <div class="sub">Sdílené nákupy podle obchodů</div>
+        </div>
+      </div>
+
+      <div class="toolbar">
+        <button class="btnGhost" id="btnNewBlock" type="button">+ Nový blok</button>
+        <button class="btnGhost danger" id="btnClearChecked" type="button">Smazat odškrtnuté</button>
+      </div>
+    </header>
+
+    <section class="blocksGrid" id="blocksGrid"></section>
+  </div>
+
+  <!-- Modal: new block -->
+  <div class="modalBackdrop" id="blockModalBackdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-label="Nový blok">
+      <div class="modalHead">
+        <div class="h">Nový blok</div>
+        <button class="btnGhost danger" id="btnCloseBlockModal" type="button">Zavřít</button>
+      </div>
+      <div class="modalBody">
+        <div class="field">
+          <label for="newBlockName">Název</label>
+          <input id="newBlockName" placeholder="např. Jídlo, Bauhaus…" autocomplete="off"/>
+        </div>
+      </div>
+      <div class="modalFooter">
+        <button class="btnPrimary" id="btnCreateBlock" type="button" disabled>Přidat</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const $ = (sel) => document.querySelector(sel);
+    const $$ = (sel) => Array.from(document.querySelectorAll(sel));
+
+    const ui = {
+      blocksGrid: $("#blocksGrid"),
+      btnNewBlock: $("#btnNewBlock"),
+      btnClearChecked: $("#btnClearChecked"),
+
+      blockModalBackdrop: $("#blockModalBackdrop"),
+      newBlockName: $("#newBlockName"),
+      btnCloseBlockModal: $("#btnCloseBlockModal"),
+      btnCreateBlock: $("#btnCreateBlock"),
+    };
+
+    let categories = [];
+    let items = [];
+
+    function uuid(){
+      return (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2));
+    }
+
+    function checkSvg(){
+      return `<svg viewBox="0 0 24 24" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>`;
+    }
+    function trashSvg(){
+      return `<svg class="iconSvg" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/>
+      </svg>`;
+    }
+
+    function render(){
+      ui.blocksGrid.innerHTML = "";
+
+      if(categories.length === 0){
+        const empty = document.createElement("div");
+        empty.className = "emptyAll";
+        empty.textContent = "Zatím žádné bloky. Přidejte první tlačítkem „+ Nový blok“.";
+        ui.blocksGrid.appendChild(empty);
+        return;
+      }
+
+      categories.slice().sort((a,b) => a.order - b.order).forEach(cat => {
+        ui.blocksGrid.appendChild(blockNode(cat));
+      });
+    }
+
+    function blockNode(cat){
+      const catItems = items.filter(i => i.categoryId === cat.id);
+      const unchecked = catItems.filter(i => !i.checked).sort((a,b) => a.order - b.order);
+      const checked = catItems.filter(i => i.checked).sort((a,b) => a.order - b.order);
+
+      const block = document.createElement("div");
+      block.className = "block";
+
+      const head = document.createElement("div");
+      head.className = "blockHead";
+
+      const name = document.createElement("div");
+      name.className = "blockName";
+      name.textContent = cat.name;
+
+      const right = document.createElement("div");
+      right.className = "blockRight";
+
+      const count = document.createElement("div");
+      count.className = "blockCount";
+      count.textContent = String(unchecked.length);
+      right.appendChild(count);
+
+      const delBtn = document.createElement("button");
+      delBtn.className = "delBlockBtn";
+      delBtn.type = "button";
+      delBtn.title = "Smazat blok";
+      delBtn.innerHTML = trashSvg();
+      delBtn.addEventListener("click", () => deleteBlock(cat.id, cat.name));
+      right.appendChild(delBtn);
+
+      head.appendChild(name);
+      head.appendChild(right);
+      block.appendChild(head);
+
+      const addRow = document.createElement("div");
+      addRow.className = "addRow";
+      const input = document.createElement("input");
+      input.placeholder = "Přidat položku…";
+      input.autocomplete = "off";
+      const addBtn = document.createElement("button");
+      addBtn.className = "addItemBtn";
+      addBtn.type = "button";
+      addBtn.textContent = "+";
+      addBtn.disabled = true;
+
+      input.addEventListener("input", () => { addBtn.disabled = !input.value.trim(); });
+      const submit = () => {
+        const title = input.value.trim();
+        if(!title) return;
+        addItem(cat.id, title);
+        input.value = "";
+        addBtn.disabled = true;
+        input.focus();
+      };
+      addBtn.addEventListener("click", submit);
+      input.addEventListener("keydown", (e) => { if(e.key === "Enter"){ e.preventDefault(); submit(); } });
+
+      addRow.appendChild(input);
+      addRow.appendChild(addBtn);
+      block.appendChild(addRow);
+
+      const list = document.createElement("div");
+      list.className = "itemList";
+
+      if(catItems.length === 0){
+        const empty = document.createElement("div");
+        empty.className = "emptyBlock";
+        empty.textContent = "Prázdno";
+        list.appendChild(empty);
+      }else{
+        [...unchecked, ...checked].forEach(it => list.appendChild(itemNode(it)));
+      }
+
+      block.appendChild(list);
+      return block;
+    }
+
+    function itemNode(it){
+      const row = document.createElement("div");
+      row.className = "item" + (it.checked ? " checked" : "");
+
+      const check = document.createElement("button");
+      check.className = "checkBtn" + (it.checked ? " checked" : "");
+      check.type = "button";
+      check.innerHTML = checkSvg();
+      check.addEventListener("click", () => toggleItem(it.id));
+
+      const title = document.createElement("div");
+      title.className = "itemTitle";
+      title.textContent = it.title;
+
+      const del = document.createElement("button");
+      del.className = "delItemBtn";
+      del.type = "button";
+      del.textContent = "×";
+      del.title = "Smazat";
+      del.addEventListener("click", () => deleteItem(it.id));
+
+      row.appendChild(check);
+      row.appendChild(title);
+      row.appendChild(del);
+      return row;
+    }
+
+    async function addItem(categoryId, title){
+      const item = { id: uuid(), categoryId, title, checked: false, order: Date.now() };
+      items.push(item);
+      render();
+      await dbInsertItem(item);
+      await refreshAll();
+    }
+
+    async function toggleItem(id){
+      const it = items.find(x => x.id === id);
+      if(!it) return;
+      it.checked = !it.checked;
+      render();
+      await dbUpdateItem(it);
+      await refreshAll();
+    }
+
+    async function deleteItem(id){
+      await dbDeleteItem(id);
+      await refreshAll();
+    }
+
+    async function deleteBlock(id, name){
+      if(!confirm(`Smazat blok "${name}" včetně všech položek?`)) return;
+      await dbDeleteCategory(id);
+      await refreshAll();
+    }
+
+    async function clearChecked(){
+      const ids = items.filter(i => i.checked).map(i => i.id);
+      if(!ids.length) return;
+      if(!confirm(`Smazat ${ids.length} odškrtnutých položek?`)) return;
+      await dbDeleteCheckedItems(ids);
+      await refreshAll();
+    }
+
+    function openBlockModal(){
+      ui.newBlockName.value = "";
+      ui.btnCreateBlock.disabled = true;
+      ui.blockModalBackdrop.classList.add("show");
+      ui.blockModalBackdrop.setAttribute("aria-hidden", "false");
+      ui.newBlockName.focus();
+    }
+    function closeBlockModal(){
+      ui.blockModalBackdrop.classList.remove("show");
+      ui.blockModalBackdrop.setAttribute("aria-hidden", "true");
+    }
+
+    async function createBlock(){
+      const name = ui.newBlockName.value.trim();
+      if(!name) return;
+      const cat = { id: uuid(), name, order: Date.now() };
+      closeBlockModal();
+      await dbInsertCategory(cat);
+      await refreshAll();
+    }
+
+    ui.btnNewBlock.addEventListener("click", openBlockModal);
+    ui.btnCloseBlockModal.addEventListener("click", closeBlockModal);
+    ui.blockModalBackdrop.addEventListener("click", (e) => { if(e.target === ui.blockModalBackdrop) closeBlockModal(); });
+    ui.newBlockName.addEventListener("input", () => { ui.btnCreateBlock.disabled = !ui.newBlockName.value.trim(); });
+    ui.newBlockName.addEventListener("keydown", (e) => { if(e.key === "Enter" && !ui.btnCreateBlock.disabled){ e.preventDefault(); createBlock(); } });
+    ui.btnCreateBlock.addEventListener("click", createBlock);
+    ui.btnClearChecked.addEventListener("click", clearChecked);
+    window.addEventListener("keydown", (e) => { if(e.key === "Escape" && ui.blockModalBackdrop.classList.contains("show")) closeBlockModal(); });
+
+    (async () => {
+      await refreshAll();
+      setupRealtime();
+    })();
+  </script>
+</body>
+</html>
