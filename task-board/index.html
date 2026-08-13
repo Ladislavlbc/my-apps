@@ -52,6 +52,25 @@
       gap: 12px;
       margin-bottom: 14px;
     }
+    .titleRow{
+      display:flex;
+      align-items:center;
+      gap: 14px;
+    }
+    .backBtn{
+      width: 40px; height: 40px; flex-shrink: 0;
+      border-radius: 14px;
+      display:grid; place-items:center;
+      background: rgba(255,255,255,.86);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow2);
+      color: var(--text);
+      text-decoration:none;
+      transition: .15s ease;
+    }
+    .backBtn:hover{ transform: translateY(-1px); box-shadow: var(--shadow); }
+    .backBtn:active{ transform: scale(.96); }
+    .backBtn .iconSvg{ stroke: var(--text); }
     .title h1{
       margin:0;
       font-size: 38px;
@@ -561,9 +580,16 @@ function setupRealtime() {
 <body>
   <div class="wrap">
     <header>
-      <div class="title">
-        <h1 id="pageTitle">Pracovní úkoly</h1>
-        <div class="date" id="today"></div>
+      <div class="titleRow">
+        <a class="backBtn" href="/" title="Zpět na Moje aplikace" aria-label="Zpět na Moje aplikace">
+          <svg class="iconSvg" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M15 18l-6-6 6-6"/>
+          </svg>
+        </a>
+        <div class="title">
+          <h1 id="pageTitle">Pracovní úkoly</h1>
+          <div class="date" id="today"></div>
+        </div>
       </div>
 
       <div class="toolbar">
