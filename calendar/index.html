@@ -411,7 +411,7 @@
       <span class="legendItem"><span class="legendDot" style="background:var(--roBg)"></span>RO</span>
       <span class="legendItem"><span class="legendDot" style="background:var(--nBg)"></span>N</span>
       <span class="legendItem"><span class="legendDot" style="background:var(--dovBg)"></span>Dov</span>
-      <span class="legendItem">✉️ poznámka</span>
+      <span class="legendItem"><span class="legendDot" style="background:rgba(60,60,67,.12)"></span>poznámka</span>
     </section>
 
     <section class="calendarGrid" id="grid"></section>
@@ -569,7 +569,7 @@
       if(shift?.note){
         const note = document.createElement("div");
         note.className = "dayNote";
-        note.textContent = "✉️ " + shift.note;
+        note.textContent = shift.note;
         top.appendChild(note);
       }
 
