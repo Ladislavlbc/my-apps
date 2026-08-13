@@ -198,12 +198,20 @@
     .dayCell.faded:hover{ transform:none; box-shadow:none; }
     .dayCell.today{ box-shadow: inset 0 0 0 2px var(--accent); }
 
-    .dayNum{ position:relative; z-index:2; font-size: 13px; font-weight: 750; color: var(--text); }
+    .dayTop{
+      position:relative; z-index:2;
+      display:flex;
+      align-items:flex-start;
+      gap: 4px;
+    }
+
+    .dayNum{ flex-shrink:0; font-size: 13px; font-weight: 750; color: var(--text); }
     .dayCell.weekend .dayNum{ color: var(--danger); }
 
     .dayNote{
-      position:relative; z-index:2;
-      margin-top: 3px;
+      flex: 1;
+      min-width: 0;
+      margin-top: 1px;
       font-size: 10px;
       line-height: 1.25;
       color: var(--muted);
@@ -227,7 +235,6 @@
     .dayCode.codeBig{ font-size: 32px; }
     .dayCode.codeMid{ font-size: 20px; }
     .dayCode.codeSmall{ font-size: 13px; }
-    .dayCode.withNote{ top: 22px; }
 
     .code-ro{ background: var(--roBg); }
     .code-n{ background: var(--nBg); }
@@ -240,7 +247,6 @@
       .dayCode.codeBig{ font-size: 22px; }
       .dayCode.codeMid{ font-size: 15px; }
       .dayCode.codeSmall{ font-size: 11px; }
-      .dayCode.withNote{ top: 22px; }
       .calendarGrid{ gap: 4px; }
     }
 
@@ -552,23 +558,27 @@
       const codeKey = shift?.code ? normalizeCode(shift.code) : null;
       if(codeKey) cell.classList.add("code-" + codeKey);
 
+      const top = document.createElement("div");
+      top.className = "dayTop";
+
       const num = document.createElement("div");
       num.className = "dayNum";
       num.textContent = d.getDate();
-      cell.appendChild(num);
+      top.appendChild(num);
 
       if(shift?.note){
         const note = document.createElement("div");
         note.className = "dayNote";
         note.textContent = "✉️ " + shift.note;
-        cell.appendChild(note);
+        top.appendChild(note);
       }
+
+      cell.appendChild(top);
 
       if(shift?.code){
         const code = document.createElement("div");
         const len = shift.code.trim().length;
         code.className = "dayCode " + (len <= 3 ? "codeBig" : len <= 6 ? "codeMid" : "codeSmall");
-        if(shift.note) code.classList.add("withNote");
         code.textContent = shift.code;
         cell.appendChild(code);
       }
