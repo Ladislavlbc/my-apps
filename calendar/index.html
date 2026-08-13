@@ -217,9 +217,12 @@
       align-items:center;
       justify-content:center;
       text-align:center;
-      font-size: 21px;
       font-weight: 900;
+      line-height: 1.05;
     }
+    .dayCode.codeBig{ font-size: 27px; }
+    .dayCode.codeMid{ font-size: 18px; }
+    .dayCode.codeSmall{ font-size: 12px; }
 
     .code-ro{ background: var(--roBg); }
     .code-n{ background: var(--nBg); }
@@ -229,7 +232,9 @@
       .dayCell{ min-height: 62px; padding: 4px; border-radius: 10px; gap: 2px; }
       .dayNum{ font-size: 11px; }
       .dayNote{ font-size: 8px; -webkit-line-clamp: 1; }
-      .dayCode{ font-size: 15px; }
+      .dayCode.codeBig{ font-size: 18px; }
+      .dayCode.codeMid{ font-size: 13px; }
+      .dayCode.codeSmall{ font-size: 10px; }
       .calendarGrid{ gap: 4px; }
     }
 
@@ -555,7 +560,8 @@
 
       if(shift?.code){
         const code = document.createElement("div");
-        code.className = "dayCode";
+        const len = shift.code.trim().length;
+        code.className = "dayCode " + (len <= 3 ? "codeBig" : len <= 6 ? "codeMid" : "codeSmall");
         code.textContent = shift.code;
         cell.appendChild(code);
       }
