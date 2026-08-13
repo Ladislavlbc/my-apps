@@ -7,40 +7,36 @@
 
   <style>
     :root{
-      --bg: #f3f4f7;
-      --panel: rgba(255,255,255,.78);
-      --border: rgba(15, 23, 42, .10);
-      --text: #0b1020;
-      --muted: rgba(15, 23, 42, .58);
-      --shadow: 0 18px 40px rgba(2, 6, 23, .10);
-      --shadow2: 0 6px 18px rgba(2, 6, 23, .08);
-      --radius-xl: 22px;
+      --bg: #f2f2f7;
+      --panel: rgba(255,255,255,.86);
+      --border: rgba(60, 60, 67, .13);
+      --text: #1c1c1e;
+      --muted: rgba(60, 60, 67, .60);
+      --shadow: 0 14px 30px rgba(0, 0, 0, .10);
+      --shadow2: 0 2px 10px rgba(0, 0, 0, .06);
+      --radius-xl: 20px;
 
-      --accent: #8b5cf6;
-      --accent2:#a855f7;
+      --accent: #007aff;
+      --accent2:#0a84ff;
 
-      --todoDot:#f59e0b;
-      --doingDot:#3b82f6;
-      --doneDot:#22c55e;
+      --todoDot:#ff9500;
+      --doingDot:#007aff;
+      --doneDot:#34c759;
 
-      --low:#22c55e;
-      --mid:#f59e0b;
-      --high:#ef4444;
+      --low:#34c759;
+      --mid:#ff9500;
+      --high:#ff3b30;
 
-      --danger:#ef4444;
+      --danger:#ff3b30;
     }
 
-    *{ box-sizing:border-box; }
+    *{ box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
     html,body{ height:100%; }
     body{
       margin:0;
-      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      font-family: -apple-system, ui-sans-serif, system-ui, "SF Pro Text", "Segoe UI", Roboto, Arial, "Apple Color Emoji", "Segoe UI Emoji";
       color:var(--text);
-      background:
-        radial-gradient(1100px 600px at 15% -10%, rgba(139,92,246,.18), transparent 60%),
-        radial-gradient(1000px 540px at 90% 5%, rgba(59,130,246,.12), transparent 55%),
-        radial-gradient(900px 520px at 70% 110%, rgba(34,197,94,.10), transparent 55%),
-        var(--bg);
+      background: var(--bg);
     }
 
     .wrap{
@@ -97,13 +93,12 @@
     }
     .seg{
       display:flex;
-      gap: 10px;
+      gap: 2px;
       width: 100%;
-      padding: 6px;
+      padding: 3px;
       border-radius: 999px;
-      border: 1px solid var(--border);
-      background: rgba(255,255,255,.88);
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,.35);
+      border: 0;
+      background: rgba(118,118,128,.12);
       max-width: 560px;
     }
     .seg button{
@@ -111,21 +106,21 @@
       border:0;
       cursor:pointer;
       border-radius: 999px;
-      padding: 12px 14px;
+      padding: 11px 14px;
       font-size: 14px;
-      font-weight: 700;
-      color: rgba(15, 23, 42, .65);
+      font-weight: 600;
+      color: rgba(60, 60, 67, .70);
       background: transparent;
       display:flex;
       align-items:center;
       justify-content:center;
-      gap: 10px;
+      gap: 8px;
       transition: .15s ease;
     }
     .seg button.active{
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      color: #fff;
-      box-shadow: 0 10px 20px rgba(139,92,246,.25);
+      background: #fff;
+      color: var(--text);
+      box-shadow: 0 3px 8px rgba(0,0,0,.12);
     }
     .toolbar{
       display:flex;
@@ -145,7 +140,7 @@
       transition: .15s ease;
     }
     .btnGhost:hover{ transform: translateY(-1px); box-shadow: var(--shadow2); }
-    .btnGhost.danger:hover{ border-color: rgba(239,68,68,.25); color: var(--danger); }
+    .btnGhost.danger:hover{ border-color: rgba(255,59,48,.25); color: var(--danger); }
 
     .stats{
       padding: 12px;
@@ -193,7 +188,7 @@
     .plus{
       width: 28px; height:28px; border-radius: 12px;
       display:grid; place-items:center;
-      background: rgba(139,92,246,.16);
+      background: rgba(0,122,255,.13);
       color: var(--accent);
       font-weight: 900;
       font-size: 18px;
@@ -240,18 +235,19 @@
     }
     .btnPrimary{
       border:0; cursor:pointer;
-      border-radius: 16px;
-      padding: 11px 14px;
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 14px;
+      padding: 11px 16px;
+      background: var(--accent);
       color: #fff;
-      font-weight: 850;
+      font-weight: 650;
       font-size: 14px;
-      box-shadow: 0 16px 30px rgba(139,92,246,.25);
+      box-shadow: 0 2px 10px rgba(0,122,255,.28);
       transition: .15s ease;
       white-space: nowrap;
     }
-    .btnPrimary:disabled{ opacity:.55; cursor:not-allowed; box-shadow: none; }
-    .btnPrimary:hover{ transform: translateY(-1px); }
+    .btnPrimary:disabled{ opacity:.4; cursor:not-allowed; box-shadow: none; }
+    .btnPrimary:hover{ background: var(--accent2); }
+    .btnPrimary:active{ transform: scale(.97); }
 
     .hint{
       font-size: 12px;
@@ -305,24 +301,25 @@
       border-radius: 18px;
     }
     .col.over{
-      outline: 2px solid rgba(139,92,246,.22);
+      outline: 2px solid rgba(0,122,255,.25);
       outline-offset: 2px;
     }
 
     .task{
-      background: rgba(255,255,255,.94);
+      background: rgba(255,255,255,.96);
       border: 1px solid var(--border);
-      border-radius: 18px;
+      border-radius: 16px;
       padding: 12px 12px 10px;
       box-shadow: var(--shadow2);
       cursor: grab;
       user-select: none;
       position: relative;
+      touch-action: none;
       transition: transform .08s ease, box-shadow .15s ease;
     }
     .task:hover{ transform: translateY(-1px); box-shadow: var(--shadow); }
     .task:active{ cursor:grabbing; }
-    .task.dragging{ opacity:.55; transform: rotate(.2deg) scale(.995); }
+    .task.dragging{ opacity:.94; transform: scale(1.03); box-shadow: var(--shadow); z-index: 5; }
 
     .taskTop{
       display:flex;
@@ -386,19 +383,22 @@
       place-items:center;
     }
     .task:hover .iconBtn{ opacity: 1; }
+    @media (hover: none){
+      .iconBtn{ opacity: .82; }
+    }
 
     .editBtn{ right: 46px; }
     .delBtn{ right: 10px; }
 
     .iconBtn:hover{ box-shadow: var(--shadow2); transform: translateY(-1px); }
     .delBtn:hover{
-      background: rgba(239,68,68,.12);
-      border-color: rgba(239,68,68,.25);
+      background: rgba(255,59,48,.12);
+      border-color: rgba(255,59,48,.25);
     }
 
     .iconSvg{ width: 16px; height: 16px; stroke: rgba(15,23,42,.60); }
-    .delBtn .iconSvg{ stroke: rgba(220,38,38,.85); }
-    .editBtn:hover .iconSvg{ stroke: rgba(139,92,246,.90); }
+    .delBtn .iconSvg{ stroke: rgba(255,59,48,.85); }
+    .editBtn:hover .iconSvg{ stroke: var(--accent); }
 
     .empty{
       text-align:center;
@@ -901,7 +901,6 @@ function setupRealtime() {
     function taskNode(t){
       const card = document.createElement("div");
       card.className = "task";
-      card.draggable = true;
       card.dataset.id = t.id;
 
       const editBtn = document.createElement("button");
@@ -969,16 +968,15 @@ function setupRealtime() {
       card.appendChild(editBtn);
       card.appendChild(delBtn);
 
-      card.addEventListener("click", () => openModal(t.id));
-
-      card.addEventListener("dragstart", (ev) => {
-        card.classList.add("dragging");
-        ev.dataTransfer.setData("text/plain", t.id);
-        ev.dataTransfer.effectAllowed = "move";
+      card.addEventListener("click", (e) => {
+        if(card.dataset.dragged === "1"){ delete card.dataset.dragged; return; }
+        openModal(t.id);
       });
-      card.addEventListener("dragend", () => {
-        card.classList.remove("dragging");
-        $$(".col").forEach(c => c.classList.remove("over"));
+
+      card.addEventListener("pointerdown", (e) => {
+        if(e.target.closest(".iconBtn")) return;
+        if(e.pointerType === "mouse" && e.button !== 0) return;
+        startDrag(e, card);
       });
 
       return card;
@@ -1047,56 +1045,90 @@ function reorderWithin(status, orderedIds){
       });
     }
 
-    // Drag & Drop (HTML5)
+    // Drag & Drop (Pointer Events – works for mouse, touch and pen alike)
     let dndInitialized = false;
+    let drag = null; // { card, pointerId, startX, startY, moved }
+
     function initDnD(){
       if(dndInitialized) return;
 
-      $$(".col").forEach(col => {
-        col.addEventListener("dragover", (e) => {
-          e.preventDefault();
-          col.classList.add("over");
-          e.dataTransfer.dropEffect = "move";
-          const zone = col.querySelector(".dropZone");
-          const dragging = document.querySelector(".task.dragging");
-          if(!dragging || !zone) return;
+      document.addEventListener("pointermove", onDragPointerMove);
+      document.addEventListener("pointerup", onDragPointerUp);
+      document.addEventListener("pointercancel", onDragPointerUp);
 
-          const after = getDragAfterElement(zone, e.clientY);
-          if(after == null){
-            zone.appendChild(dragging);
-          }else{
-            zone.insertBefore(dragging, after);
-          }
-        });
+      dndInitialized = true;
+    }
 
-        col.addEventListener("dragleave", () => col.classList.remove("over"));
+    function startDrag(e, card){
+      drag = {
+        card,
+        pointerId: e.pointerId,
+        startX: e.clientX,
+        startY: e.clientY,
+        moved: false,
+      };
+      card.setPointerCapture(e.pointerId);
+    }
 
-        col.addEventListener("drop", async (e) => {
-          e.preventDefault();
-          col.classList.remove("over");
+    function onDragPointerMove(e){
+      if(!drag || e.pointerId !== drag.pointerId) return;
 
-          const id = e.dataTransfer.getData("text/plain");
-          const status = col.getAttribute("data-col");
-          const t = tasks.find(x => x.id === id);
-          if(!t) return;
+      if(!drag.moved){
+        const dx = e.clientX - drag.startX;
+        const dy = e.clientY - drag.startY;
+        if(Math.hypot(dx, dy) < 6) return; // small threshold: a tap shouldn't count as a drag
+        drag.moved = true;
+        drag.card.classList.add("dragging");
+        drag.card.dataset.dragged = "1";
+      }
 
-          t.status = status;
+      e.preventDefault();
 
-          const zone = col.querySelector(".dropZone");
-          const ids = Array.from(zone.querySelectorAll(".task"))
-            .map(n => n.dataset.id)
-            .filter(Boolean);
+      const el = document.elementFromPoint(e.clientX, e.clientY);
+      const col = el && el.closest(".col");
+      $$(".col").forEach(c => c.classList.toggle("over", c === col));
+      if(!col) return;
 
-          reorderWithin(status, ids);
+      const zone = col.querySelector(".dropZone");
+      const after = getDragAfterElement(zone, e.clientY);
+      if(after == null){
+        zone.appendChild(drag.card);
+      }else{
+        zone.insertBefore(drag.card, after);
+      }
+    }
+
+    async function onDragPointerUp(e){
+      if(!drag || e.pointerId !== drag.pointerId) return;
+
+      const { card, moved } = drag;
+      if(card.hasPointerCapture(e.pointerId)) card.releasePointerCapture(e.pointerId);
+      card.classList.remove("dragging");
+      $$(".col").forEach(c => c.classList.remove("over"));
+      drag = null;
+
+      if(!moved) return;
+
+      const col = card.closest(".col");
+      const status = col ? col.getAttribute("data-col") : null;
+      if(!status) return;
+
+      const t = tasks.find(x => x.id === card.dataset.id);
+      if(!t) return;
+
+      t.status = status;
+
+      const zone = col.querySelector(".dropZone");
+      const ids = Array.from(zone.querySelectorAll(".task"))
+        .map(n => n.dataset.id)
+        .filter(Boolean);
+
+      reorderWithin(status, ids);
 
       // Ulož změny pořadí a stavu do DB (cílový sloupec)
       const affected = tasks.filter(x => x.scope === scope && x.status === status);
       await Promise.all(affected.map(dbUpdateTask));
       await refreshTasks();
-        });
-      });
-
-      dndInitialized = true;
     }
 
     function getDragAfterElement(container, y){
