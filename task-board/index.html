@@ -457,8 +457,8 @@
       color: rgba(15,23,42,.45);
     }
   </style>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
-
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
 // =========================
 // Supabase DB (shared)
 // =========================
@@ -467,10 +467,10 @@ const SUPABASE_KEY = "sb_publishable_gkHDuvNM75l5krS0vPQegA_FaQzI0jG";
 // Všichni, kdo používají stejné BOARD_ID, sdílí stejné úkoly (bez loginu)
 const BOARD_ID = "rodina";
 
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 async function dbFetchTasks() {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseClient
     .from('tasks')
     .select('*')
     .eq('board_id', BOARD_ID)
@@ -495,7 +495,7 @@ async function dbFetchTasks() {
 }
 
 async function dbInsertTask(task) {
-  const { error } = await supabase.from('tasks').insert({
+  const { error } = await supabaseClient.from('tasks').insert({
     id: task.id,
     board_id: BOARD_ID,
     scope: task.scope,
@@ -510,7 +510,7 @@ async function dbInsertTask(task) {
 }
 
 async function dbUpdateTask(task) {
-  const { error } = await supabase
+  const { error } = await supabaseClient
     .from('tasks')
     .update({
       scope: task.scope,
@@ -526,12 +526,12 @@ async function dbUpdateTask(task) {
 }
 
 async function dbDeleteTask(id) {
-  const { error } = await supabase.from('tasks').delete().eq('id', id);
+  const { error } = await supabaseClient.from('tasks').delete().eq('id', id);
   if (error) console.error('dbDeleteTask:', error);
 }
 
 async function dbDeleteAllForBoard() {
-  const { error } = await supabase.from('tasks').delete().eq('board_id', BOARD_ID);
+  const { error } = await supabaseClient.from('tasks').delete().eq('board_id', BOARD_ID);
   if (error) console.error('dbDeleteAllForBoard:', error);
 }
 
@@ -542,7 +542,7 @@ async function refreshTasks() {
 
 function setupRealtime() {
   // Filtr na board_id zajistí, že změny jiných boardů nerefreshují UI
-  supabase
+  supabaseClient
     .channel('tasks-live')
     .on('postgres_changes', {
       event: '*',
