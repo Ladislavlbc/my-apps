@@ -212,10 +212,13 @@
     }
 
     .dayCode{
-      margin-top: auto;
-      align-self: center;
-      font-size: 15px;
-      font-weight: 850;
+      flex: 1;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      text-align:center;
+      font-size: 21px;
+      font-weight: 900;
     }
 
     .code-ro{ background: var(--roBg); }
@@ -223,10 +226,10 @@
     .code-dov{ background: var(--dovBg); }
 
     @media (max-width: 480px){
-      .dayCell{ min-height: 58px; padding: 4px; border-radius: 10px; gap: 2px; }
+      .dayCell{ min-height: 62px; padding: 4px; border-radius: 10px; gap: 2px; }
       .dayNum{ font-size: 11px; }
       .dayNote{ font-size: 8px; -webkit-line-clamp: 1; }
-      .dayCode{ font-size: 12px; }
+      .dayCode{ font-size: 15px; }
       .calendarGrid{ gap: 4px; }
     }
 
