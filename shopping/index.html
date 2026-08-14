@@ -657,6 +657,18 @@
       }
     }
 
+    async function saveSubscription(sub){
+      const json = sub.toJSON();
+      const { error } = await supabaseClient.from("push_subscriptions").upsert({
+        id: uuid(),
+        board_id: BOARD_ID,
+        endpoint: sub.endpoint,
+        p256dh: json.keys.p256dh,
+        auth: json.keys.auth,
+      }, { onConflict: "endpoint" });
+      return error;
+    }
+
     async function enableNotifications(){
       if(!pushSupported()){
         alert("Tento prohlížeč nepodporuje oznámení.");
@@ -677,14 +689,7 @@
             applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
           });
         }
-        const json = sub.toJSON();
-        const { error } = await supabaseClient.from("push_subscriptions").upsert({
-          id: uuid(),
-          board_id: BOARD_ID,
-          endpoint: sub.endpoint,
-          p256dh: json.keys.p256dh,
-          auth: json.keys.auth,
-        }, { onConflict: "endpoint" });
+        const error = await saveSubscription(sub);
         if(error){
           console.error("save subscription:", error);
           alert("Zapnutí oznámení se nepovedlo (uložení): " + error.message);
@@ -713,11 +718,24 @@
           const reg = await navigator.serviceWorker.getRegistration("/shopping/");
           const sub = reg && await reg.pushManager.getSubscription();
           if(sub){
+            const { data } = await supabaseClient
+              .from("push_subscriptions")
+              .select("id")
+              .eq("endpoint", sub.endpoint)
+              .maybeSingle();
+
+            if(!data){
+              // Browser has a subscription, but it never made it into the DB
+              // (e.g. an earlier save failed) — try to heal it silently.
+              const error = await saveSubscription(sub);
+              if(error){ console.error("initPushButton resave:", error); updateNotifyButton(false); return; }
+            }
+
             localStorage.setItem("pushEndpoint", sub.endpoint);
             updateNotifyButton(true);
             return;
           }
-        }catch(e){}
+        }catch(e){ console.error("initPushButton:", e); }
       }
       updateNotifyButton(false);
     }
