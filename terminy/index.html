@@ -1,0 +1,599 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Termíny</title>
+
+  <style>
+    :root{
+      --bg: #f2f2f7;
+      --panel: rgba(255,255,255,.86);
+      --border: rgba(60, 60, 67, .13);
+      --text: #1c1c1e;
+      --muted: rgba(60, 60, 67, .60);
+      --shadow: 0 14px 30px rgba(0, 0, 0, .10);
+      --shadow2: 0 2px 10px rgba(0, 0, 0, .06);
+      --radius-xl: 20px;
+
+      --accent: #007aff;
+      --accent2: #0a84ff;
+      --danger: #ff3b30;
+      --amber: #ff9500;
+    }
+
+    *{ box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
+    html,body{ height:100%; }
+    body{
+      margin:0;
+      font-family: -apple-system, ui-sans-serif, system-ui, "SF Pro Text", "Segoe UI", Roboto, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      color:var(--text);
+      background: var(--bg);
+    }
+
+    .wrap{
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 28px 18px 42px;
+    }
+
+    header{
+      display:flex;
+      align-items:flex-end;
+      justify-content:space-between;
+      gap: 12px;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
+    }
+    @media (max-width: 700px){
+      header{ flex-direction:column; align-items:flex-start; }
+    }
+
+    .titleRow{ display:flex; align-items:center; gap: 14px; }
+    .backBtn{
+      width: 40px; height: 40px; flex-shrink: 0;
+      border-radius: 14px;
+      display:grid; place-items:center;
+      background: rgba(255,255,255,.86);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow2);
+      color: var(--text);
+      text-decoration:none;
+      transition: .15s ease;
+    }
+    .backBtn:hover{ transform: translateY(-1px); box-shadow: var(--shadow); }
+    .backBtn:active{ transform: scale(.96); }
+    .backBtn .iconSvg{ stroke: var(--text); }
+
+    .title h1{ margin:0; font-size: 34px; letter-spacing:-.03em; font-weight: 800; }
+    .title .sub{ margin-top:4px; font-size: 13px; color:var(--muted); }
+
+    .toolbar{ display:flex; gap:8px; }
+    .btnGhost{
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.86);
+      color: rgba(28,28,30,.75);
+      padding: 10px 12px;
+      border-radius: 14px;
+      cursor:pointer;
+      font-size: 13px;
+      font-weight: 650;
+      transition: .15s ease;
+    }
+    .btnGhost:hover{ transform: translateY(-1px); box-shadow: var(--shadow2); }
+    .btnGhost.danger:hover{ border-color: rgba(255,59,48,.25); color: var(--danger); }
+
+    .btnPrimary{
+      border:0; cursor:pointer;
+      border-radius: 14px;
+      padding: 11px 16px;
+      background: var(--accent);
+      color: #fff;
+      font-weight: 650;
+      font-size: 14px;
+      box-shadow: 0 2px 10px rgba(0,122,255,.28);
+      transition: .15s ease;
+      white-space: nowrap;
+    }
+    .btnPrimary:hover{ background: var(--accent2); }
+    .btnPrimary:active{ transform: scale(.97); }
+
+    .legend{
+      display:flex; gap: 16px; flex-wrap: wrap;
+      padding: 10px 4px 14px;
+      font-size: 12px; font-weight: 700; color: var(--muted);
+    }
+    .legendItem{ display:flex; align-items:center; gap: 6px; }
+    .legendDot{ width: 10px; height:10px; border-radius: 4px; flex-shrink:0; }
+
+    .tableWrap{
+      overflow-x: auto;
+      border-radius: var(--radius-xl);
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.94);
+      box-shadow: var(--shadow2);
+    }
+    table{ width:100%; border-collapse: collapse; font-size: 14px; min-width: 640px; }
+    thead th{
+      text-align:left;
+      padding: 12px 14px;
+      font-size: 11px;
+      font-weight: 850;
+      letter-spacing:.05em;
+      text-transform: uppercase;
+      color: var(--muted);
+      cursor:pointer;
+      user-select:none;
+      white-space:nowrap;
+      border-bottom: 1px solid var(--border);
+      transition: color .1s ease;
+    }
+    thead th:hover{ color: var(--text); }
+    thead th .arrow{ margin-left: 4px; opacity:.55; font-size:10px; }
+    tbody td{
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    tbody tr:last-child td{ border-bottom: 0; }
+    tbody tr{ cursor:pointer; transition: background .1s ease; }
+    tbody tr:hover{ background: rgba(0,122,255,.05); }
+    tbody tr.overdue{ background: rgba(255,59,48,.07); }
+    tbody tr.overdue:hover{ background: rgba(255,59,48,.12); }
+    tbody tr.soon{ background: rgba(255,149,0,.09); }
+    tbody tr.soon:hover{ background: rgba(255,149,0,.15); }
+
+    .titleCell{ font-weight: 700; }
+    .tagChip{
+      display:inline-flex; align-items:center;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(0,122,255,.12);
+      color: var(--accent);
+      font-weight: 700;
+      font-size: 12px;
+      white-space:nowrap;
+    }
+    .dueCell{ white-space:nowrap; }
+    .dueDate{ font-weight: 750; }
+    .dueRel{ margin-top: 2px; font-size: 12px; color: var(--muted); }
+    tr.overdue .dueDate, tr.overdue .dueRel{ color: var(--danger); }
+    tr.soon .dueDate, tr.soon .dueRel{ color: #b06400; }
+
+    .noteCell{ color: var(--muted); max-width: 260px; }
+
+    .actionsCell{ text-align:right; white-space:nowrap; }
+    .delRowBtn{
+      width: 30px; height: 30px;
+      border-radius: 10px;
+      border: 1px solid rgba(28,28,30,.10);
+      background: rgba(255,255,255,.9);
+      cursor:pointer;
+      display:inline-grid; place-items:center;
+      transition: .15s ease;
+    }
+    .delRowBtn:hover{ background: rgba(255,59,48,.12); border-color: rgba(255,59,48,.25); }
+    .delRowBtn .iconSvg{ width:14px; height:14px; stroke: rgba(255,59,48,.85); }
+
+    .empty{
+      text-align:center;
+      color: var(--muted);
+      font-weight: 600;
+      padding: 40px 16px;
+    }
+
+    /* modal */
+    .modalBackdrop{
+      position: fixed; inset: 0;
+      background: rgba(2, 6, 23, .45);
+      display:none;
+      align-items:center; justify-content:center;
+      padding: 18px;
+      z-index: 50;
+    }
+    .modalBackdrop.show{ display:flex; }
+    .modal{
+      width: min(520px, 100%);
+      background: rgba(255,255,255,.96);
+      border: 1px solid rgba(255,255,255,.25);
+      border-radius: 22px;
+      box-shadow: 0 30px 80px rgba(0,0,0,.25);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      overflow:hidden;
+    }
+    .modalHead{
+      padding: 14px 16px;
+      display:flex; align-items:center; justify-content:space-between;
+      gap: 12px;
+      border-bottom: 1px solid rgba(15,23,42,.10);
+    }
+    .modalHead .h{ font-weight: 800; letter-spacing:-.02em; }
+    .modalBody{ padding: 14px 16px 16px; display:grid; gap: 10px; }
+    .modalFooter{
+      padding: 14px 16px;
+      display:flex; justify-content:flex-end; gap: 10px;
+      border-top: 1px solid rgba(15,23,42,.10);
+      background: rgba(255,255,255,.70);
+    }
+    .field{
+      display:flex; align-items:center; gap: 8px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.88);
+      box-shadow: var(--shadow2);
+    }
+    .field label{ font-size: 12px; color: rgba(28,28,30,.55); font-weight: 750; white-space: nowrap; }
+    input, textarea{
+      border: 0; outline: none; background: transparent;
+      font-size: 14px; color: rgba(28,28,30,.9);
+      width: 100%; font-family: inherit;
+    }
+    textarea{
+      resize: vertical; min-height: 64px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.88);
+      box-shadow: var(--shadow2);
+    }
+  </style>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    // =========================
+    // Supabase DB (shared) — deadlines
+    // =========================
+    const SUPABASE_URL = "https://nvniycrgdfvgphcvptsh.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_gkHDuvNM75l5krS0vPQegA_FaQzI0jG";
+    const BOARD_ID = "rodina";
+
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    async function dbFetchDeadlines(){
+      const { data, error } = await supabaseClient
+        .from("deadlines")
+        .select("*")
+        .eq("board_id", BOARD_ID);
+      if(error){ console.error("dbFetchDeadlines:", error); return []; }
+      return (data || []).map(d => ({
+        id: d.id, title: d.title, tag: d.tag || "", dueDate: d.due_date, note: d.note || "",
+      }));
+    }
+
+    async function dbInsertDeadline(d){
+      const { error } = await supabaseClient.from("deadlines").insert({
+        id: d.id, board_id: BOARD_ID, title: d.title, tag: d.tag || null, due_date: d.dueDate, note: d.note || null,
+      });
+      if(error) console.error("dbInsertDeadline:", error);
+    }
+
+    async function dbUpdateDeadline(d){
+      const { error } = await supabaseClient
+        .from("deadlines")
+        .update({ title: d.title, tag: d.tag || null, due_date: d.dueDate, note: d.note || null })
+        .eq("id", d.id);
+      if(error) console.error("dbUpdateDeadline:", error);
+    }
+
+    async function dbDeleteDeadline(id){
+      const { error } = await supabaseClient.from("deadlines").delete().eq("id", id);
+      if(error) console.error("dbDeleteDeadline:", error);
+    }
+
+    function setupRealtime(){
+      supabaseClient
+        .channel("deadlines-live")
+        .on("postgres_changes", { event: "*", schema: "public", table: "deadlines", filter: `board_id=eq.${BOARD_ID}` }, refreshAll)
+        .subscribe();
+    }
+
+    async function refreshAll(){
+      deadlines = await dbFetchDeadlines();
+      render();
+    }
+  </script>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="titleRow">
+        <a class="backBtn" href="/" title="Zpět na Moje aplikace" aria-label="Zpět na Moje aplikace">
+          <svg class="iconSvg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M15 18l-6-6 6-6"/>
+          </svg>
+        </a>
+        <div class="title">
+          <h1>Termíny</h1>
+          <div class="sub">Hlídání důležitých dat pro celou rodinu</div>
+        </div>
+      </div>
+
+      <div class="toolbar">
+        <button class="btnPrimary" id="btnAdd" type="button">+ Přidat termín</button>
+      </div>
+    </header>
+
+    <div class="legend">
+      <span class="legendItem"><span class="legendDot" style="background:rgba(255,59,48,.6)"></span>Prošlo</span>
+      <span class="legendItem"><span class="legendDot" style="background:rgba(255,149,0,.7)"></span>Do 7 dní</span>
+    </div>
+
+    <div class="tableWrap">
+      <table>
+        <thead>
+          <tr>
+            <th data-key="title">Název<span class="arrow" id="arrow-title"></span></th>
+            <th data-key="tag">Pro koho<span class="arrow" id="arrow-tag"></span></th>
+            <th data-key="dueDate">Termín<span class="arrow" id="arrow-dueDate"></span></th>
+            <th data-key="note">Poznámka<span class="arrow" id="arrow-note"></span></th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <datalist id="tagList"></datalist>
+
+  <!-- Modal: add/edit deadline -->
+  <div class="modalBackdrop" id="modalBackdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-label="Termín">
+      <div class="modalHead">
+        <div class="h" id="modalTitle">Nový termín</div>
+        <button class="btnGhost danger" id="btnCloseModal" type="button">Zavřít</button>
+      </div>
+      <div class="modalBody">
+        <div class="field">
+          <label for="mName">Název</label>
+          <input id="mName" placeholder="např. STK, Očkování…" autocomplete="off"/>
+        </div>
+        <div class="field">
+          <label for="mTag">Pro koho</label>
+          <input id="mTag" list="tagList" placeholder="např. Auto, jméno…" autocomplete="off"/>
+        </div>
+        <div class="field">
+          <label for="mDue">Termín</label>
+          <input id="mDue" type="date"/>
+        </div>
+        <textarea id="mNote" placeholder="Poznámka…"></textarea>
+      </div>
+      <div class="modalFooter">
+        <button class="btnGhost danger" id="btnDelete" type="button">Smazat</button>
+        <button class="btnPrimary" id="btnSave" type="button">Uložit</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const $ = (sel) => document.querySelector(sel);
+    const $$ = (sel) => Array.from(document.querySelectorAll(sel));
+
+    const ui = {
+      tbody: $("#tbody"),
+      btnAdd: $("#btnAdd"),
+      tagList: $("#tagList"),
+
+      modalBackdrop: $("#modalBackdrop"),
+      modalTitle: $("#modalTitle"),
+      mName: $("#mName"),
+      mTag: $("#mTag"),
+      mDue: $("#mDue"),
+      mNote: $("#mNote"),
+      btnCloseModal: $("#btnCloseModal"),
+      btnSave: $("#btnSave"),
+      btnDelete: $("#btnDelete"),
+    };
+
+    let deadlines = [];
+    let editingId = null;
+    let sortKey = "dueDate";
+    let sortDir = "asc";
+
+    function uuid(){
+      return (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2));
+    }
+
+    function trashSvg(){
+      return `<svg class="iconSvg" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/>
+      </svg>`;
+    }
+
+    function todayMidnight(){
+      const d = new Date();
+      d.setHours(0,0,0,0);
+      return d;
+    }
+
+    function daysUntil(iso){
+      const due = new Date(iso + "T00:00:00");
+      return Math.round((due - todayMidnight()) / 86400000);
+    }
+
+    function statusClass(iso){
+      const days = daysUntil(iso);
+      if(days < 0) return "overdue";
+      if(days <= 7) return "soon";
+      return "";
+    }
+
+    function formatDue(iso){
+      const due = new Date(iso + "T00:00:00");
+      const dateStr = new Intl.DateTimeFormat("cs-CZ", { day: "numeric", month: "numeric", year: "numeric" }).format(due);
+      const days = daysUntil(iso);
+      let rel;
+      if(days === 0) rel = "dnes";
+      else if(days === 1) rel = "zítra";
+      else if(days === -1) rel = "včera";
+      else if(days > 1) rel = `za ${days} dní`;
+      else rel = `před ${Math.abs(days)} dny`;
+      return { dateStr, rel };
+    }
+
+    function sortedDeadlines(){
+      const arr = deadlines.slice();
+      arr.sort((a, b) => {
+        let av = a[sortKey] || "";
+        let bv = b[sortKey] || "";
+        if(sortKey !== "dueDate"){ av = av.toString().toLowerCase(); bv = bv.toString().toLowerCase(); }
+        if(av < bv) return sortDir === "asc" ? -1 : 1;
+        if(av > bv) return sortDir === "asc" ? 1 : -1;
+        return 0;
+      });
+      return arr;
+    }
+
+    function updateArrows(){
+      ["title", "tag", "dueDate", "note"].forEach(key => {
+        const el = $("#arrow-" + key);
+        if(!el) return;
+        el.textContent = key === sortKey ? (sortDir === "asc" ? "▲" : "▼") : "";
+      });
+    }
+
+    function updateTagSuggestions(){
+      const tags = [...new Set(deadlines.map(d => d.tag).filter(Boolean))];
+      ui.tagList.innerHTML = tags.map(t => `<option value="${t.replace(/"/g, "&quot;")}"></option>`).join("");
+    }
+
+    function render(){
+      updateArrows();
+      updateTagSuggestions();
+      ui.tbody.innerHTML = "";
+
+      const list = sortedDeadlines();
+      if(list.length === 0){
+        const tr = document.createElement("tr");
+        const td = document.createElement("td");
+        td.colSpan = 5;
+        td.className = "empty";
+        td.textContent = "Zatím žádné termíny. Přidejte první tlačítkem „+ Přidat termín“.";
+        tr.appendChild(td);
+        ui.tbody.appendChild(tr);
+        return;
+      }
+
+      list.forEach(d => ui.tbody.appendChild(rowNode(d)));
+    }
+
+    function rowNode(d){
+      const tr = document.createElement("tr");
+      const cls = statusClass(d.dueDate);
+      if(cls) tr.classList.add(cls);
+      tr.addEventListener("click", () => openModal(d.id));
+
+      const titleTd = document.createElement("td");
+      titleTd.className = "titleCell";
+      titleTd.textContent = d.title;
+      tr.appendChild(titleTd);
+
+      const tagTd = document.createElement("td");
+      if(d.tag){
+        const chip = document.createElement("span");
+        chip.className = "tagChip";
+        chip.textContent = d.tag;
+        tagTd.appendChild(chip);
+      }
+      tr.appendChild(tagTd);
+
+      const { dateStr, rel } = formatDue(d.dueDate);
+      const dueTd = document.createElement("td");
+      dueTd.className = "dueCell";
+      dueTd.innerHTML = `<div class="dueDate">${dateStr}</div><div class="dueRel">${rel}</div>`;
+      tr.appendChild(dueTd);
+
+      const noteTd = document.createElement("td");
+      noteTd.className = "noteCell";
+      noteTd.textContent = d.note || "";
+      tr.appendChild(noteTd);
+
+      const actionsTd = document.createElement("td");
+      actionsTd.className = "actionsCell";
+      const delBtn = document.createElement("button");
+      delBtn.className = "delRowBtn";
+      delBtn.type = "button";
+      delBtn.title = "Smazat";
+      delBtn.innerHTML = trashSvg();
+      delBtn.addEventListener("click", (e) => { e.stopPropagation(); deleteDeadline(d.id, d.title); });
+      actionsTd.appendChild(delBtn);
+      tr.appendChild(actionsTd);
+
+      return tr;
+    }
+
+    $$("thead th[data-key]").forEach(th => {
+      th.addEventListener("click", () => {
+        const key = th.getAttribute("data-key");
+        if(sortKey === key){ sortDir = sortDir === "asc" ? "desc" : "asc"; }
+        else { sortKey = key; sortDir = "asc"; }
+        render();
+      });
+    });
+
+    function openModal(id){
+      editingId = id || null;
+      const d = id ? deadlines.find(x => x.id === id) : null;
+      ui.modalTitle.textContent = d ? "Upravit termín" : "Nový termín";
+      ui.mName.value = d ? d.title : "";
+      ui.mTag.value = d ? d.tag : "";
+      ui.mDue.value = d ? d.dueDate : "";
+      ui.mNote.value = d ? d.note : "";
+      ui.btnDelete.style.display = d ? "" : "none";
+      ui.modalBackdrop.classList.add("show");
+      ui.modalBackdrop.setAttribute("aria-hidden", "false");
+      ui.mName.focus();
+    }
+
+    function closeModal(){
+      ui.modalBackdrop.classList.remove("show");
+      ui.modalBackdrop.setAttribute("aria-hidden", "true");
+      editingId = null;
+    }
+
+    async function saveDeadline(){
+      const title = ui.mName.value.trim();
+      const dueDate = ui.mDue.value;
+      if(!title || !dueDate){
+        alert("Vyplňte prosím alespoň název a termín.");
+        return;
+      }
+      const payload = {
+        id: editingId || uuid(),
+        title,
+        tag: ui.mTag.value.trim(),
+        dueDate,
+        note: ui.mNote.value.trim(),
+      };
+      closeModal();
+      if(editingId){
+        await dbUpdateDeadline(payload);
+      }else{
+        await dbInsertDeadline(payload);
+      }
+      await refreshAll();
+    }
+
+    async function deleteDeadline(id, title){
+      if(!confirm(`Smazat termín "${title}"?`)) return;
+      await dbDeleteDeadline(id);
+      if(editingId === id) closeModal();
+      await refreshAll();
+    }
+
+    ui.btnAdd.addEventListener("click", () => openModal(null));
+    ui.btnCloseModal.addEventListener("click", closeModal);
+    ui.modalBackdrop.addEventListener("click", (e) => { if(e.target === ui.modalBackdrop) closeModal(); });
+    ui.btnSave.addEventListener("click", saveDeadline);
+    ui.btnDelete.addEventListener("click", () => deleteDeadline(editingId, ui.mName.value.trim()));
+    window.addEventListener("keydown", (e) => { if(e.key === "Escape" && ui.modalBackdrop.classList.contains("show")) closeModal(); });
+
+    (async () => {
+      await refreshAll();
+      setupRealtime();
+    })();
+  </script>
+</body>
+</html>
