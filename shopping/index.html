@@ -693,7 +693,7 @@
         }
 
         setStatus("2/5 Registruji service worker…");
-        const reg = await navigator.serviceWorker.register("/shopping/sw.js", { scope: "/shopping" });
+        const reg = await navigator.serviceWorker.register("/sw.js", { scope: "/shopping" });
 
         setStatus("3/5 Čekám, až se service worker aktivuje…");
         const readyReg = await navigator.serviceWorker.ready;
