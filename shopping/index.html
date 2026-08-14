@@ -693,7 +693,7 @@
         }
 
         setStatus("2/5 Registruji service worker…");
-        const reg = await navigator.serviceWorker.register("/shopping/sw.js", { scope: "/shopping/" });
+        const reg = await navigator.serviceWorker.register("/shopping/sw.js", { scope: "/shopping" });
 
         setStatus("3/5 Čekám, až se service worker aktivuje…");
         const readyReg = await navigator.serviceWorker.ready;
@@ -737,7 +737,7 @@
       }
       if(Notification.permission === "granted"){
         try{
-          const reg = await navigator.serviceWorker.getRegistration("/shopping/");
+          const reg = await navigator.serviceWorker.getRegistration("/shopping");
           const sub = reg && await reg.pushManager.getSubscription();
           if(sub){
             const { data } = await supabaseClient
