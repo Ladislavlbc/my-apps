@@ -390,6 +390,7 @@
         <button class="btnGhost danger" id="btnClearChecked" type="button">Smazat odškrtnuté</button>
       </div>
     </header>
+    <div id="notifyStatus" style="font-size:12px;color:var(--muted);margin:-8px 0 14px;min-height:16px;"></div>
 
     <section class="blocksGrid" id="blocksGrid"></section>
   </div>
@@ -420,6 +421,7 @@
     const ui = {
       blocksGrid: $("#blocksGrid"),
       btnNotify: $("#btnNotify"),
+      notifyStatus: $("#notifyStatus"),
       btnNewBlock: $("#btnNewBlock"),
       btnClearChecked: $("#btnClearChecked"),
 
@@ -669,22 +671,34 @@
       return error;
     }
 
+    function setStatus(text){
+      ui.notifyStatus.textContent = text;
+    }
+
     async function enableNotifications(){
       if(!pushSupported()){
         alert("Tento prohlížeč nepodporuje oznámení.");
         return;
       }
       try{
+        setStatus("1/5 Žádám o povolení…");
         // Request permission FIRST, as the very first async step after the tap —
         // Safari silently ignores requestPermission() if it's not (close to) the
         // direct result of a user gesture, e.g. after an awaited SW registration.
         const perm = await Notification.requestPermission();
         if(perm !== "granted"){
+          setStatus("Oznámení nebyla povolena (" + perm + ").");
           alert("Oznámení nebyla povolena.");
           return;
         }
+
+        setStatus("2/5 Registruji service worker…");
         const reg = await navigator.serviceWorker.register("/shopping/sw.js", { scope: "/shopping/" });
+
+        setStatus("3/5 Čekám, až se service worker aktivuje…");
         const readyReg = await navigator.serviceWorker.ready;
+
+        setStatus("4/5 Vytvářím odběr (push subscription)…");
         let sub = await readyReg.pushManager.getSubscription();
         if(!sub){
           sub = await readyReg.pushManager.subscribe({
@@ -692,16 +706,21 @@
             applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
           });
         }
+
+        setStatus("5/5 Ukládám do databáze…");
         const error = await saveSubscription(sub);
         if(error){
           console.error("save subscription:", error);
+          setStatus("Chyba při ukládání: " + error.message);
           alert("Zapnutí oznámení se nepovedlo (uložení): " + error.message);
           return;
         }
         localStorage.setItem("pushEndpoint", sub.endpoint);
         updateNotifyButton(true);
+        setStatus("Hotovo — oznámení jsou zapnutá.");
       }catch(e){
         console.error("enableNotifications:", e);
+        setStatus("Chyba: " + (e && e.message ? e.message : String(e)));
         alert("Zapnutí oznámení se nepovedlo: " + e.message);
       }
     }
