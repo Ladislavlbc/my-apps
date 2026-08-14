@@ -106,6 +106,59 @@
     .legendItem{ display:flex; align-items:center; gap: 6px; }
     .legendDot{ width: 10px; height:10px; border-radius: 4px; flex-shrink:0; }
 
+    .mobileSort{
+      display:none;
+      align-items:center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .mobileSort select{
+      flex:1;
+      padding: 10px 12px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.9);
+      box-shadow: var(--shadow2);
+      font-size: 14px;
+      color: var(--text);
+      font-family: inherit;
+    }
+    .mobileSortDir{
+      width: 40px; height: 40px; flex-shrink:0;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.9);
+      box-shadow: var(--shadow2);
+      font-size: 15px;
+      cursor:pointer;
+    }
+
+    .cardsWrap{ display:none; gap: 10px; }
+    .card{
+      border-radius: var(--radius-xl);
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.94);
+      box-shadow: var(--shadow2);
+      padding: 14px;
+      cursor:pointer;
+    }
+    .card.overdue{ background: rgba(255,59,48,.07); }
+    .card.soon{ background: rgba(255,149,0,.09); }
+    .cardTop{ display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
+    .cardTitle{ font-weight: 750; font-size: 15px; }
+    .cardDue{ margin-top: 6px; font-size: 13px; font-weight: 700; }
+    .cardRel{ font-size: 12px; color: var(--muted); }
+    .card.overdue .cardDue, .card.overdue .cardRel{ color: var(--danger); }
+    .card.soon .cardDue, .card.soon .cardRel{ color: #b06400; }
+    .cardNote{ margin-top: 8px; font-size: 13px; color: var(--muted); }
+    .cardTag{ margin-top: 8px; }
+
+    @media (max-width: 700px){
+      .mobileSort{ display:flex; }
+      .tableWrap{ display:none; }
+      .cardsWrap{ display:grid; }
+    }
+
     .tableWrap{
       overflow-x: auto;
       border-radius: var(--radius-xl);
@@ -320,6 +373,16 @@
       <span class="legendItem"><span class="legendDot" style="background:rgba(255,149,0,.7)"></span>Do 7 dní</span>
     </div>
 
+    <div class="mobileSort">
+      <select id="mobileSortKey">
+        <option value="dueDate">Řadit: Termín</option>
+        <option value="title">Řadit: Název</option>
+        <option value="tag">Řadit: Pro koho</option>
+        <option value="note">Řadit: Poznámka</option>
+      </select>
+      <button class="mobileSortDir" id="mobileSortDir" type="button" title="Otočit směr řazení">▲</button>
+    </div>
+
     <div class="tableWrap">
       <table>
         <thead>
@@ -334,6 +397,8 @@
         <tbody id="tbody"></tbody>
       </table>
     </div>
+
+    <div class="cardsWrap" id="cardsWrap"></div>
   </div>
 
   <datalist id="tagList"></datalist>
@@ -373,6 +438,9 @@
 
     const ui = {
       tbody: $("#tbody"),
+      cardsWrap: $("#cardsWrap"),
+      mobileSortKey: $("#mobileSortKey"),
+      mobileSortDir: $("#mobileSortDir"),
       btnAdd: $("#btnAdd"),
       tagList: $("#tagList"),
 
@@ -452,6 +520,8 @@
         if(!el) return;
         el.textContent = key === sortKey ? (sortDir === "asc" ? "▲" : "▼") : "";
       });
+      ui.mobileSortKey.value = sortKey;
+      ui.mobileSortDir.textContent = sortDir === "asc" ? "▲" : "▼";
     }
 
     function updateTagSuggestions(){
@@ -463,6 +533,7 @@
       updateArrows();
       updateTagSuggestions();
       ui.tbody.innerHTML = "";
+      ui.cardsWrap.innerHTML = "";
 
       const list = sortedDeadlines();
       if(list.length === 0){
@@ -473,10 +544,70 @@
         td.textContent = "Zatím žádné termíny. Přidejte první tlačítkem „+ Přidat termín“.";
         tr.appendChild(td);
         ui.tbody.appendChild(tr);
+
+        const empty = document.createElement("div");
+        empty.className = "empty";
+        empty.textContent = "Zatím žádné termíny. Přidejte první tlačítkem „+ Přidat termín“.";
+        ui.cardsWrap.appendChild(empty);
         return;
       }
 
-      list.forEach(d => ui.tbody.appendChild(rowNode(d)));
+      list.forEach(d => {
+        ui.tbody.appendChild(rowNode(d));
+        ui.cardsWrap.appendChild(cardNode(d));
+      });
+    }
+
+    function cardNode(d){
+      const card = document.createElement("div");
+      card.className = "card";
+      const cls = statusClass(d.dueDate);
+      if(cls) card.classList.add(cls);
+      card.addEventListener("click", () => openModal(d.id));
+
+      const { dateStr, rel } = formatDue(d.dueDate);
+
+      const top = document.createElement("div");
+      top.className = "cardTop";
+
+      const title = document.createElement("div");
+      title.className = "cardTitle";
+      title.textContent = d.title;
+      top.appendChild(title);
+
+      const delBtn = document.createElement("button");
+      delBtn.className = "delRowBtn";
+      delBtn.type = "button";
+      delBtn.title = "Smazat";
+      delBtn.innerHTML = trashSvg();
+      delBtn.addEventListener("click", (e) => { e.stopPropagation(); deleteDeadline(d.id, d.title); });
+      top.appendChild(delBtn);
+
+      card.appendChild(top);
+
+      const due = document.createElement("div");
+      due.className = "cardDue";
+      due.innerHTML = `${dateStr} <span class="cardRel">${rel}</span>`;
+      card.appendChild(due);
+
+      if(d.tag){
+        const tagWrap = document.createElement("div");
+        tagWrap.className = "cardTag";
+        const chip = document.createElement("span");
+        chip.className = "tagChip";
+        chip.textContent = d.tag;
+        tagWrap.appendChild(chip);
+        card.appendChild(tagWrap);
+      }
+
+      if(d.note){
+        const note = document.createElement("div");
+        note.className = "cardNote";
+        note.textContent = d.note;
+        card.appendChild(note);
+      }
+
+      return card;
     }
 
     function rowNode(d){
@@ -531,6 +662,15 @@
         else { sortKey = key; sortDir = "asc"; }
         render();
       });
+    });
+
+    ui.mobileSortKey.addEventListener("change", () => {
+      sortKey = ui.mobileSortKey.value;
+      render();
+    });
+    ui.mobileSortDir.addEventListener("click", () => {
+      sortDir = sortDir === "asc" ? "desc" : "asc";
+      render();
     });
 
     function openModal(id){
