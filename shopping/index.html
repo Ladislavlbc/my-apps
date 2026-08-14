@@ -5,6 +5,13 @@
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>Nákupní seznam</title>
 
+  <link rel="manifest" href="/shopping/manifest.json"/>
+  <link rel="apple-touch-icon" href="/shopping/icon-192.png"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+  <meta name="apple-mobile-web-app-title" content="Nákup"/>
+  <meta name="theme-color" content="#007aff"/>
+
   <style>
     :root{
       --bg: #f2f2f7;
@@ -378,6 +385,7 @@
       </div>
 
       <div class="toolbar">
+        <button class="btnGhost" id="btnNotify" type="button">🔔 Zapnout oznámení</button>
         <button class="btnGhost" id="btnNewBlock" type="button">+ Nový blok</button>
         <button class="btnGhost danger" id="btnClearChecked" type="button">Smazat odškrtnuté</button>
       </div>
@@ -411,6 +419,7 @@
 
     const ui = {
       blocksGrid: $("#blocksGrid"),
+      btnNotify: $("#btnNotify"),
       btnNewBlock: $("#btnNewBlock"),
       btnClearChecked: $("#btnClearChecked"),
 
@@ -563,6 +572,7 @@
       render();
       await dbInsertItem(item);
       await refreshAll();
+      notifyOthers(`Přidáno: ${title}`);
     }
 
     async function toggleItem(id){
@@ -572,6 +582,7 @@
       render();
       await dbUpdateItem(it);
       await refreshAll();
+      if(it.checked) notifyOthers(`Odškrtnuto: ${it.title}`);
     }
 
     async function deleteItem(id){
@@ -614,6 +625,100 @@
       await refreshAll();
     }
 
+    // =========================
+    // Push notifications
+    // =========================
+    const VAPID_PUBLIC_KEY = "BOWPQW4wq0x3MnSppFqqNnSmcieO0awp0xgB3MF7H7TXPUi93j8f9LMgGq_-_OP-6wUpvtvwe6paQvLQrls9rrk";
+
+    function urlBase64ToUint8Array(base64String){
+      const padding = "=".repeat((4 - base64String.length % 4) % 4);
+      const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+      const rawData = atob(base64);
+      const output = new Uint8Array(rawData.length);
+      for(let i = 0; i < rawData.length; i++) output[i] = rawData.charCodeAt(i);
+      return output;
+    }
+
+    function pushSupported(){
+      return "serviceWorker" in navigator && "PushManager" in window;
+    }
+
+    async function notifyOthers(body){
+      if(!pushSupported()) return;
+      const myEndpoint = localStorage.getItem("pushEndpoint") || "";
+      try{
+        await fetch("/api/notify-shopping", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title: "Nákupní seznam", body, url: "/shopping", excludeEndpoint: myEndpoint }),
+        });
+      }catch(e){
+        console.error("notifyOthers:", e);
+      }
+    }
+
+    async function enableNotifications(){
+      if(!pushSupported()){
+        alert("Tento prohlížeč nepodporuje oznámení.");
+        return;
+      }
+      try{
+        const reg = await navigator.serviceWorker.register("/shopping/sw.js", { scope: "/shopping/" });
+        const perm = await Notification.requestPermission();
+        if(perm !== "granted"){
+          alert("Oznámení nebyla povolena.");
+          return;
+        }
+        const readyReg = await navigator.serviceWorker.ready;
+        let sub = await readyReg.pushManager.getSubscription();
+        if(!sub){
+          sub = await readyReg.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+          });
+        }
+        const json = sub.toJSON();
+        localStorage.setItem("pushEndpoint", sub.endpoint);
+        await supabaseClient.from("push_subscriptions").upsert({
+          id: uuid(),
+          board_id: BOARD_ID,
+          endpoint: sub.endpoint,
+          p256dh: json.keys.p256dh,
+          auth: json.keys.auth,
+        }, { onConflict: "endpoint" });
+        updateNotifyButton(true);
+      }catch(e){
+        console.error("enableNotifications:", e);
+        alert("Zapnutí oznámení se nepovedlo: " + e.message);
+      }
+    }
+
+    function updateNotifyButton(on){
+      ui.btnNotify.textContent = on ? "🔔 Oznámení zapnutá" : "🔔 Zapnout oznámení";
+      ui.btnNotify.disabled = on;
+    }
+
+    async function initPushButton(){
+      if(!pushSupported()){
+        ui.btnNotify.style.display = "none";
+        return;
+      }
+      if(Notification.permission === "granted"){
+        try{
+          const reg = await navigator.serviceWorker.getRegistration("/shopping/");
+          const sub = reg && await reg.pushManager.getSubscription();
+          if(sub){
+            localStorage.setItem("pushEndpoint", sub.endpoint);
+            updateNotifyButton(true);
+            return;
+          }
+        }catch(e){}
+      }
+      updateNotifyButton(false);
+    }
+
+    ui.btnNotify.addEventListener("click", enableNotifications);
+
     ui.btnNewBlock.addEventListener("click", openBlockModal);
     ui.btnCloseBlockModal.addEventListener("click", closeBlockModal);
     ui.blockModalBackdrop.addEventListener("click", (e) => { if(e.target === ui.blockModalBackdrop) closeBlockModal(); });
@@ -626,6 +731,7 @@
     (async () => {
       await refreshAll();
       setupRealtime();
+      initPushButton();
     })();
   </script>
 </body>

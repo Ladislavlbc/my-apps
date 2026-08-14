@@ -3,6 +3,7 @@
     { "src": "^/task-board$", "dest": "/task-board/index.html" },
     { "src": "^/calendar$", "dest": "/calendar/index.html" },
     { "src": "^/shopping$", "dest": "/shopping/index.html" },
-    { "src": "^/$", "dest": "/index.html" }
+    { "src": "^/$", "dest": "/index.html" },
+    { "handle": "filesystem" }
   ]
 }
