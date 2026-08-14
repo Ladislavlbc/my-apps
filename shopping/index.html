@@ -678,14 +678,19 @@
           });
         }
         const json = sub.toJSON();
-        localStorage.setItem("pushEndpoint", sub.endpoint);
-        await supabaseClient.from("push_subscriptions").upsert({
+        const { error } = await supabaseClient.from("push_subscriptions").upsert({
           id: uuid(),
           board_id: BOARD_ID,
           endpoint: sub.endpoint,
           p256dh: json.keys.p256dh,
           auth: json.keys.auth,
         }, { onConflict: "endpoint" });
+        if(error){
+          console.error("save subscription:", error);
+          alert("Zapnutí oznámení se nepovedlo (uložení): " + error.message);
+          return;
+        }
+        localStorage.setItem("pushEndpoint", sub.endpoint);
         updateNotifyButton(true);
       }catch(e){
         console.error("enableNotifications:", e);
