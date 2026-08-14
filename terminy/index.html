@@ -512,9 +512,17 @@
       return "";
     }
 
-    function formatDue(iso){
+    function formatDue(iso, short){
       const due = new Date(iso + "T00:00:00");
-      const dateStr = new Intl.DateTimeFormat("cs-CZ", { day: "numeric", month: "numeric", year: "numeric" }).format(due);
+      let dateStr;
+      if(short){
+        const dd = String(due.getDate()).padStart(2, "0");
+        const mm = String(due.getMonth() + 1).padStart(2, "0");
+        const yy = String(due.getFullYear()).slice(-2);
+        dateStr = `${dd}.${mm}.${yy}`;
+      }else{
+        dateStr = new Intl.DateTimeFormat("cs-CZ", { day: "numeric", month: "numeric", year: "numeric" }).format(due);
+      }
       const days = daysUntil(iso);
       let rel;
       if(days === 0) rel = "dnes";
@@ -589,7 +597,7 @@
       if(cls) card.classList.add(cls);
       card.addEventListener("click", () => openModal(d.id));
 
-      const { dateStr, rel } = formatDue(d.dueDate);
+      const { dateStr, rel } = formatDue(d.dueDate, true);
 
       const top = document.createElement("div");
       top.className = "cardTop";
