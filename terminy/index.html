@@ -137,13 +137,14 @@
     .card{
       border-radius: 14px;
       border: 1px solid var(--border);
+      border-left: 4px solid transparent;
       background: rgba(255,255,255,.94);
       box-shadow: var(--shadow2);
       padding: 8px 10px;
       cursor:pointer;
     }
-    .card.overdue{ background: rgba(255,59,48,.07); }
-    .card.soon{ background: rgba(255,149,0,.09); }
+    .card.overdue{ border-left-color: var(--danger); }
+    .card.soon{ border-left-color: var(--amber); }
     .cardTop{ display:flex; align-items:center; flex-wrap:nowrap; gap:8px; }
     .cardTitleRow{ display:flex; align-items:center; gap:8px; min-width:0; flex:1; }
     .cardTitle{ font-weight: 700; font-size: 14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
@@ -199,14 +200,10 @@
       vertical-align: middle;
     }
     tbody tr:last-child td{ border-bottom: 0; }
-    tbody tr{ cursor:pointer; transition: background .1s ease; }
-    tbody tr:hover{ background: rgba(0,122,255,.05); }
-    tbody tr.overdue{ background: rgba(255,59,48,.07); }
-    tbody tr.overdue:hover{ background: rgba(255,59,48,.12); }
-    tbody tr.soon{ background: rgba(255,149,0,.09); }
-    tbody tr.soon:hover{ background: rgba(255,149,0,.15); }
-
-    .titleCell{ font-weight: 700; }
+    tbody tr{ cursor:pointer; }
+    .titleCell{ font-weight: 700; box-shadow: inset 4px 0 0 0 transparent; }
+    tr.overdue .titleCell{ box-shadow: inset 4px 0 0 0 var(--danger); }
+    tr.soon .titleCell{ box-shadow: inset 4px 0 0 0 var(--amber); }
     .tagChip{
       display:inline-flex; align-items:center;
       padding: 4px 10px;
@@ -482,6 +479,37 @@
       return (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2));
     }
 
+    // Person -> color, so each family member has a consistent identity across rows/cards/chips.
+    const PERSON_COLORS = {
+      "mája": "#ff3b30", "maja": "#ff3b30",
+      "domča": "#0a84ff", "domca": "#0a84ff", "dominik": "#0a84ff",
+      "láďa": "#34c759", "lada": "#34c759", "ladislav": "#34c759",
+      "nikča": "#af52de", "nikca": "#af52de",
+      "auto": "#8e8e93",
+    };
+    function personColor(tag){
+      if(!tag) return null;
+      return PERSON_COLORS[tag.trim().toLowerCase()] || null;
+    }
+    function hexToRgba(hex, alpha){
+      const h = hex.replace("#", "");
+      const r = parseInt(h.substring(0,2), 16);
+      const g = parseInt(h.substring(2,4), 16);
+      const b = parseInt(h.substring(4,6), 16);
+      return `rgba(${r},${g},${b},${alpha})`;
+    }
+    function tagChipNode(tag){
+      const chip = document.createElement("span");
+      chip.className = "tagChip";
+      chip.textContent = tag;
+      const color = personColor(tag);
+      if(color){
+        chip.style.background = hexToRgba(color, 0.16);
+        chip.style.color = color;
+      }
+      return chip;
+    }
+
     function trashSvg(){
       return `<svg class="iconSvg" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/>
@@ -595,6 +623,8 @@
       card.className = "card";
       const cls = statusClass(d.dueDate);
       if(cls) card.classList.add(cls);
+      const personCol = personColor(d.tag);
+      if(personCol) card.style.background = hexToRgba(personCol, 0.10);
       card.addEventListener("click", () => openModal(d.id));
 
       const { dateStr, rel } = formatDue(d.dueDate, true);
@@ -610,12 +640,7 @@
       title.textContent = d.title;
       titleRow.appendChild(title);
 
-      if(d.tag){
-        const chip = document.createElement("span");
-        chip.className = "tagChip";
-        chip.textContent = d.tag;
-        titleRow.appendChild(chip);
-      }
+      if(d.tag) titleRow.appendChild(tagChipNode(d.tag));
 
       top.appendChild(titleRow);
 
@@ -659,6 +684,8 @@
       const tr = document.createElement("tr");
       const cls = statusClass(d.dueDate);
       if(cls) tr.classList.add(cls);
+      const personCol = personColor(d.tag);
+      if(personCol) tr.style.background = hexToRgba(personCol, 0.08);
       tr.addEventListener("click", () => openModal(d.id));
 
       const titleTd = document.createElement("td");
@@ -667,12 +694,7 @@
       tr.appendChild(titleTd);
 
       const tagTd = document.createElement("td");
-      if(d.tag){
-        const chip = document.createElement("span");
-        chip.className = "tagChip";
-        chip.textContent = d.tag;
-        tagTd.appendChild(chip);
-      }
+      if(d.tag) tagTd.appendChild(tagChipNode(d.tag));
       tr.appendChild(tagTd);
 
       const { dateStr, rel } = formatDue(d.dueDate);
