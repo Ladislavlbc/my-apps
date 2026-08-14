@@ -624,7 +624,7 @@
       const cls = statusClass(d.dueDate);
       if(cls) card.classList.add(cls);
       const personCol = personColor(d.tag);
-      if(personCol) card.style.background = hexToRgba(personCol, 0.10);
+      if(personCol) card.style.background = hexToRgba(personCol, 0.24);
       card.addEventListener("click", () => openModal(d.id));
 
       const { dateStr, rel } = formatDue(d.dueDate, true);
@@ -685,7 +685,7 @@
       const cls = statusClass(d.dueDate);
       if(cls) tr.classList.add(cls);
       const personCol = personColor(d.tag);
-      if(personCol) tr.style.background = hexToRgba(personCol, 0.08);
+      if(personCol) tr.style.background = hexToRgba(personCol, 0.22);
       tr.addEventListener("click", () => openModal(d.id));
 
       const titleTd = document.createElement("td");
