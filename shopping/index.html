@@ -675,12 +675,15 @@
         return;
       }
       try{
-        const reg = await navigator.serviceWorker.register("/shopping/sw.js", { scope: "/shopping/" });
+        // Request permission FIRST, as the very first async step after the tap —
+        // Safari silently ignores requestPermission() if it's not (close to) the
+        // direct result of a user gesture, e.g. after an awaited SW registration.
         const perm = await Notification.requestPermission();
         if(perm !== "granted"){
           alert("Oznámení nebyla povolena.");
           return;
         }
+        const reg = await navigator.serviceWorker.register("/shopping/sw.js", { scope: "/shopping/" });
         const readyReg = await navigator.serviceWorker.ready;
         let sub = await readyReg.pushManager.getSubscription();
         if(!sub){
