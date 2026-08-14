@@ -144,18 +144,24 @@
     }
     .card.overdue{ background: rgba(255,59,48,.07); }
     .card.soon{ background: rgba(255,149,0,.09); }
-    .cardTop{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
+    .cardTop{ display:flex; align-items:center; flex-wrap:nowrap; gap:8px; }
     .cardTitleRow{ display:flex; align-items:center; gap:8px; min-width:0; flex:1; }
     .cardTitle{ font-weight: 700; font-size: 14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .cardMeta{
-      margin-top: 2px;
+    .cardDue{
+      font-size: 12px;
+      color: var(--muted);
+      white-space:nowrap;
+      flex-shrink:0;
+    }
+    .cardDue b{ font-weight: 700; color: var(--text); }
+    .card.overdue .cardDue, .card.overdue .cardDue b{ color: var(--danger); }
+    .card.soon .cardDue, .card.soon .cardDue b{ color: #b06400; }
+    .cardNoteLine{
+      margin-top: 3px;
       font-size: 12px;
       color: var(--muted);
       white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
     }
-    .cardMeta b{ font-weight: 700; color: var(--text); }
-    .card.overdue .cardMeta, .card.overdue .cardMeta b{ color: var(--danger); }
-    .card.soon .cardMeta, .card.soon .cardMeta b{ color: #b06400; }
 
     @media (max-width: 700px){
       .mobileSort{ display:flex; }
@@ -605,6 +611,11 @@
 
       top.appendChild(titleRow);
 
+      const due = document.createElement("div");
+      due.className = "cardDue";
+      due.innerHTML = `<b>${dateStr}</b> (${rel})`;
+      top.appendChild(due);
+
       const actions = document.createElement("div");
 
       const editBtn = document.createElement("button");
@@ -626,10 +637,12 @@
       top.appendChild(actions);
       card.appendChild(top);
 
-      const meta = document.createElement("div");
-      meta.className = "cardMeta";
-      meta.innerHTML = `<b>${dateStr}</b> (${rel})${d.note ? " — " + d.note.replace(/</g, "&lt;") : ""}`;
-      card.appendChild(meta);
+      if(d.note){
+        const noteLine = document.createElement("div");
+        noteLine.className = "cardNoteLine";
+        noteLine.textContent = d.note;
+        card.appendChild(noteLine);
+      }
 
       return card;
     }
