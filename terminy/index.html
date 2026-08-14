@@ -133,25 +133,29 @@
       cursor:pointer;
     }
 
-    .cardsWrap{ display:none; gap: 10px; }
+    .cardsWrap{ display:none; gap: 6px; }
     .card{
-      border-radius: var(--radius-xl);
+      border-radius: 14px;
       border: 1px solid var(--border);
       background: rgba(255,255,255,.94);
       box-shadow: var(--shadow2);
-      padding: 14px;
+      padding: 8px 10px;
       cursor:pointer;
     }
     .card.overdue{ background: rgba(255,59,48,.07); }
     .card.soon{ background: rgba(255,149,0,.09); }
-    .cardTop{ display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
-    .cardTitle{ font-weight: 750; font-size: 15px; }
-    .cardDue{ margin-top: 6px; font-size: 13px; font-weight: 700; }
-    .cardRel{ font-size: 12px; color: var(--muted); }
-    .card.overdue .cardDue, .card.overdue .cardRel{ color: var(--danger); }
-    .card.soon .cardDue, .card.soon .cardRel{ color: #b06400; }
-    .cardNote{ margin-top: 8px; font-size: 13px; color: var(--muted); }
-    .cardTag{ margin-top: 8px; }
+    .cardTop{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
+    .cardTitleRow{ display:flex; align-items:center; gap:8px; min-width:0; flex:1; }
+    .cardTitle{ font-weight: 700; font-size: 14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .cardMeta{
+      margin-top: 2px;
+      font-size: 12px;
+      color: var(--muted);
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    }
+    .cardMeta b{ font-weight: 700; color: var(--text); }
+    .card.overdue .cardMeta, .card.overdue .cardMeta b{ color: var(--danger); }
+    .card.soon .cardMeta, .card.soon .cardMeta b{ color: #b06400; }
 
     @media (max-width: 700px){
       .mobileSort{ display:flex; }
@@ -166,10 +170,10 @@
       background: rgba(255,255,255,.94);
       box-shadow: var(--shadow2);
     }
-    table{ width:100%; border-collapse: collapse; font-size: 14px; min-width: 640px; }
+    table{ width:100%; border-collapse: collapse; font-size: 13px; min-width: 640px; }
     thead th{
       text-align:left;
-      padding: 12px 14px;
+      padding: 8px 14px;
       font-size: 11px;
       font-weight: 850;
       letter-spacing:.05em;
@@ -184,9 +188,9 @@
     thead th:hover{ color: var(--text); }
     thead th .arrow{ margin-left: 4px; opacity:.55; font-size:10px; }
     tbody td{
-      padding: 12px 14px;
+      padding: 6px 14px;
       border-bottom: 1px solid var(--border);
-      vertical-align: top;
+      vertical-align: middle;
     }
     tbody tr:last-child td{ border-bottom: 0; }
     tbody tr{ cursor:pointer; transition: background .1s ease; }
@@ -208,17 +212,21 @@
       white-space:nowrap;
     }
     .dueCell{ white-space:nowrap; }
-    .dueDate{ font-weight: 750; }
-    .dueRel{ margin-top: 2px; font-size: 12px; color: var(--muted); }
+    .dueDate{ font-weight: 700; }
+    .dueRel{ font-size: 12px; color: var(--muted); }
     tr.overdue .dueDate, tr.overdue .dueRel{ color: var(--danger); }
     tr.soon .dueDate, tr.soon .dueRel{ color: #b06400; }
 
-    .noteCell{ color: var(--muted); max-width: 260px; }
+    .noteCell{
+      color: var(--muted);
+      max-width: 260px;
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    }
 
     .actionsCell{ text-align:right; white-space:nowrap; }
     .editRowBtn, .delRowBtn{
-      width: 30px; height: 30px;
-      border-radius: 10px;
+      width: 26px; height: 26px;
+      border-radius: 9px;
       border: 1px solid rgba(28,28,30,.10);
       background: rgba(255,255,255,.9);
       cursor:pointer;
@@ -580,10 +588,22 @@
       const top = document.createElement("div");
       top.className = "cardTop";
 
-      const title = document.createElement("div");
+      const titleRow = document.createElement("div");
+      titleRow.className = "cardTitleRow";
+
+      const title = document.createElement("span");
       title.className = "cardTitle";
       title.textContent = d.title;
-      top.appendChild(title);
+      titleRow.appendChild(title);
+
+      if(d.tag){
+        const chip = document.createElement("span");
+        chip.className = "tagChip";
+        chip.textContent = d.tag;
+        titleRow.appendChild(chip);
+      }
+
+      top.appendChild(titleRow);
 
       const actions = document.createElement("div");
 
@@ -606,27 +626,10 @@
       top.appendChild(actions);
       card.appendChild(top);
 
-      const due = document.createElement("div");
-      due.className = "cardDue";
-      due.innerHTML = `${dateStr} <span class="cardRel">${rel}</span>`;
-      card.appendChild(due);
-
-      if(d.tag){
-        const tagWrap = document.createElement("div");
-        tagWrap.className = "cardTag";
-        const chip = document.createElement("span");
-        chip.className = "tagChip";
-        chip.textContent = d.tag;
-        tagWrap.appendChild(chip);
-        card.appendChild(tagWrap);
-      }
-
-      if(d.note){
-        const note = document.createElement("div");
-        note.className = "cardNote";
-        note.textContent = d.note;
-        card.appendChild(note);
-      }
+      const meta = document.createElement("div");
+      meta.className = "cardMeta";
+      meta.innerHTML = `<b>${dateStr}</b> (${rel})${d.note ? " — " + d.note.replace(/</g, "&lt;") : ""}`;
+      card.appendChild(meta);
 
       return card;
     }
@@ -654,7 +657,7 @@
       const { dateStr, rel } = formatDue(d.dueDate);
       const dueTd = document.createElement("td");
       dueTd.className = "dueCell";
-      dueTd.innerHTML = `<div class="dueDate">${dateStr}</div><div class="dueRel">${rel}</div>`;
+      dueTd.innerHTML = `<span class="dueDate">${dateStr}</span> <span class="dueRel">(${rel})</span>`;
       tr.appendChild(dueTd);
 
       const noteTd = document.createElement("td");
