@@ -755,6 +755,7 @@
         alert("Vyplňte prosím alespoň název a termín.");
         return;
       }
+      const isEditing = !!editingId;
       const payload = {
         id: editingId || uuid(),
         title,
@@ -763,7 +764,7 @@
         note: ui.mNote.value.trim(),
       };
       closeModal();
-      if(editingId){
+      if(isEditing){
         await dbUpdateDeadline(payload);
       }else{
         await dbInsertDeadline(payload);
