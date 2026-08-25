@@ -65,7 +65,17 @@
     .backBtn:active{ transform: scale(.96); }
     .backBtn .iconSvg{ stroke: var(--text); }
 
-    .title h1{ margin:0; font-size: 34px; letter-spacing:-.03em; font-weight: 800; }
+    .title h1{
+      margin:0;
+      font-size: 34px;
+      letter-spacing:-.03em;
+      font-weight: 800;
+      display: inline-block;
+      background: var(--danger);
+      color: #fff;
+      padding: 4px 14px;
+      border-radius: 10px;
+    }
     .title .sub{ margin-top:4px; font-size: 13px; color:var(--muted); }
 
     .toolbar{ display:flex; gap:8px; }
