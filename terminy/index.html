@@ -319,6 +319,7 @@
   </style>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
   <script>
     // =========================
     // Supabase DB (shared) — deadlines
@@ -389,6 +390,7 @@
       </div>
 
       <div class="toolbar">
+        <button class="btnGhost" id="btnExport" type="button">Export do Excelu</button>
         <button class="btnPrimary" id="btnAdd" type="button">+ Přidat termín</button>
       </div>
     </header>
@@ -467,6 +469,7 @@
       mobileSortKey: $("#mobileSortKey"),
       mobileSortDir: $("#mobileSortDir"),
       btnAdd: $("#btnAdd"),
+      btnExport: $("#btnExport"),
       tagList: $("#tagList"),
 
       modalBackdrop: $("#modalBackdrop"),
@@ -582,6 +585,82 @@
         return 0;
       });
       return arr;
+    }
+
+    function blendWithWhite(hex, alpha){
+      const h = hex.replace("#", "");
+      const r = parseInt(h.substring(0,2), 16);
+      const g = parseInt(h.substring(2,4), 16);
+      const b = parseInt(h.substring(4,6), 16);
+      const mix = (c) => Math.round(c * alpha + 255 * (1 - alpha));
+      const toHex = (c) => c.toString(16).padStart(2, "0");
+      return (toHex(mix(r)) + toHex(mix(g)) + toHex(mix(b))).toUpperCase();
+    }
+
+    async function exportToExcel(){
+      try{
+        const wb = new ExcelJS.Workbook();
+        wb.creator = "Termíny";
+        wb.created = new Date();
+        const ws = wb.addWorksheet("Termíny");
+
+        ws.columns = [
+          { header: "Název", key: "title", width: 30 },
+          { header: "Pro koho", key: "tag", width: 16 },
+          { header: "Termín", key: "dueDate", width: 14 },
+          { header: "Stav", key: "status", width: 12 },
+          { header: "Poznámka", key: "note", width: 40 },
+        ];
+
+        const headerRow = ws.getRow(1);
+        headerRow.font = { bold: true, color: { argb: "FFFFFFFF" } };
+        headerRow.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF007AFF" } };
+
+        sortedDeadlines().forEach((d) => {
+          const days = daysUntil(d.dueDate);
+          const status = days < 0 ? "Prošlo" : (days <= 7 ? "Blíží se" : "");
+          const row = ws.addRow({
+            title: d.title,
+            tag: d.tag || "",
+            dueDate: new Date(d.dueDate + "T00:00:00"),
+            status,
+            note: d.note || "",
+          });
+          row.getCell("dueDate").numFmt = "dd.mm.yyyy";
+          row.getCell("title").font = { bold: true };
+
+          const color = personColor(d.tag);
+          if(color){
+            const argb = "FF" + blendWithWhite(color, 0.24);
+            row.eachCell({ includeEmpty: true }, (cell) => {
+              cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb } };
+            });
+            row.getCell("title").font = { bold: true };
+          }
+
+          if(days < 0){
+            row.getCell("status").font = { bold: true, color: { argb: "FFFF3B30" } };
+          }else if(days <= 7){
+            row.getCell("status").font = { bold: true, color: { argb: "FFB06400" } };
+          }
+        });
+
+        ws.views = [{ state: "frozen", ySplit: 1 }];
+
+        const buffer = await wb.xlsx.writeBuffer();
+        const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `terminy_${new Date().toISOString().slice(0,10)}.xlsx`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }catch(err){
+        console.error(err);
+        alert("Export do Excelu se nepovedl. Zkuste to prosím znovu.");
+      }
     }
 
     function updateArrows(){
@@ -812,6 +891,7 @@
     }
 
     ui.btnAdd.addEventListener("click", () => openModal(null));
+    ui.btnExport.addEventListener("click", exportToExcel);
     ui.btnCloseModal.addEventListener("click", closeModal);
     ui.modalBackdrop.addEventListener("click", (e) => { if(e.target === ui.modalBackdrop) closeModal(); });
     ui.btnSave.addEventListener("click", saveDeadline);
