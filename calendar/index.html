@@ -23,6 +23,7 @@
       --roBg: #d1d1d6;
       --nBg: #ffd60a;
       --dovBg: #fff3c4;
+      --sBg: #8bc34a;
       --weekendBg: #c62828;
     }
 
@@ -239,6 +240,7 @@
     .code-ro{ background: var(--roBg); }
     .code-n{ background: var(--nBg); }
     .code-dov{ background: var(--dovBg); }
+    .code-s{ background: var(--sBg); }
 
     @media (max-width: 480px){
       .dayCell{ min-height: 68px; padding: 4px; border-radius: 10px; gap: 2px; }
@@ -411,6 +413,7 @@
       <span class="legendItem"><span class="legendDot" style="background:var(--roBg)"></span>RO</span>
       <span class="legendItem"><span class="legendDot" style="background:var(--nBg)"></span>N</span>
       <span class="legendItem"><span class="legendDot" style="background:var(--dovBg)"></span>Dov</span>
+      <span class="legendItem"><span class="legendDot" style="background:var(--sBg)"></span>Š</span>
       <span class="legendItem"><span class="legendDot" style="background:rgba(60,60,67,.12)"></span>poznámka</span>
     </section>
 
@@ -427,7 +430,7 @@
       <div class="modalBody">
         <div class="field">
           <label for="mCode">Kód</label>
-          <input id="mCode" placeholder="RO / N / Dov / vlastní…" autocomplete="off"/>
+          <input id="mCode" placeholder="RO / N / Dov / Š / vlastní…" autocomplete="off"/>
         </div>
         <textarea id="mNote" placeholder="Poznámka…"></textarea>
       </div>
@@ -508,6 +511,7 @@
       if(c === "RO") return "ro";
       if(c === "N") return "n";
       if(c === "DOV") return "dov";
+      if(c === "Š") return "s";
       return null;
     }
 
