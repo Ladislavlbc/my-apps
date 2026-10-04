@@ -679,12 +679,20 @@
     }
 
     function parseAmount(str){
-      const clean = String(str).replace(/\s|Kč/gi, "").replace(",", ".").replace(/^[-+]/, "");
+      const clean = String(str).replace(/\s|Kč/gi, "").replace(",", ".").replace(/^[-+−]/, "");
       const n = Number(clean);
       return Number.isFinite(n) && n > 0 ? Math.round(n * 100) / 100 : null;
     }
 
+    // A minus typed into the amount switches the toggle to "Půjčeno (−)"; a plus to "Vráceno (+)".
+    function syncSignFromInput(){
+      const v = ui.mAmount.value.trim();
+      if(v.startsWith("-") || v.startsWith("−")) setSign(-1);
+      else if(v.startsWith("+")) setSign(1);
+    }
+
     async function saveEntry(){
+      syncSignFromInput();
       const date = ui.mDate.value;
       const abs = parseAmount(ui.mAmount.value);
       if(!date){ ui.formError.textContent = "Vyplňte prosím datum."; return; }
@@ -725,6 +733,7 @@
     ui.pwClose.addEventListener("click", closePw);
     ui.pwBackdrop.addEventListener("click", (e) => { if(e.target === ui.pwBackdrop) closePw(); });
     ui.signSegment.addEventListener("click", (e) => { const b = e.target.closest("button"); if(b) setSign(Number(b.dataset.sign)); });
+    ui.mAmount.addEventListener("input", syncSignFromInput);
     ui.btnCloseModal.addEventListener("click", closeModal);
     ui.modalBackdrop.addEventListener("click", (e) => { if(e.target === ui.modalBackdrop) closeModal(); });
     ui.btnSave.addEventListener("click", saveEntry);
