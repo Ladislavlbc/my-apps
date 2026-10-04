@@ -141,6 +141,8 @@
     .amountCell{ text-align:right; white-space:nowrap; font-weight: 750; font-variant-numeric: tabular-nums; }
     tr.neg .amountCell, .card.neg .cardAmount{ color: var(--neg-text); }
     tr.pos .amountCell, .card.pos .cardAmount{ color: var(--pos-text); }
+    .balanceCell{ text-align:right; white-space:nowrap; font-weight: 600; color: var(--muted); font-variant-numeric: tabular-nums; }
+    .cardBalance{ font-size: 12px; color: var(--muted); white-space:nowrap; font-variant-numeric: tabular-nums; }
     .noteCell{ color: var(--muted); }
     .actionsCell{ text-align:right; white-space:nowrap; width: 1%; }
 
@@ -175,6 +177,8 @@
     .cardDate{ font-weight: 650; font-size: 14px; flex:1; }
     .cardAmount{ font-weight: 800; font-size: 15px; white-space:nowrap; font-variant-numeric: tabular-nums; }
     .cardNote{ margin-top: 3px; font-size: 12px; color: var(--muted); }
+    .cardMeta{ margin-top: 3px; display:flex; justify-content:space-between; gap: 10px; }
+    .cardMeta .cardNote{ margin-top: 0; }
 
     @media (max-width: 700px){
       .tableWrap{ display:none; }
@@ -327,6 +331,7 @@
           <tr>
             <th>Datum</th>
             <th class="num">Částka</th>
+            <th class="num">Zůstatek</th>
             <th>Poznámka</th>
             <th class="editCol" hidden></th>
           </tr>
@@ -552,7 +557,7 @@
       if(entries.length === 0){
         const tr = document.createElement("tr");
         const td = document.createElement("td");
-        td.colSpan = u ? 4 : 3;
+        td.colSpan = u ? 5 : 4;
         td.className = "empty";
         td.textContent = "Zatím tu nejsou žádné záznamy.";
         tr.appendChild(td);
@@ -563,9 +568,17 @@
         ui.cardsWrap.appendChild(empty);
       }
 
-      entries.forEach(e => {
-        ui.tbody.appendChild(rowNode(e, u));
-        ui.cardsWrap.appendChild(cardNode(e, u));
+      // Running balance: entries are newest-first, so accumulate from the oldest.
+      const balances = new Array(entries.length);
+      let running = 0;
+      for(let i = entries.length - 1; i >= 0; i--){
+        running = Math.round((running + entries[i].amount) * 100) / 100;
+        balances[i] = running;
+      }
+
+      entries.forEach((e, i) => {
+        ui.tbody.appendChild(rowNode(e, u, balances[i]));
+        ui.cardsWrap.appendChild(cardNode(e, u, balances[i]));
       });
 
       renderSummary();
@@ -585,15 +598,16 @@
       return frag;
     }
 
-    function rowNode(e, u){
+    function rowNode(e, u, bal){
       const tr = document.createElement("tr");
       const cls = rowClass(e.amount);
       if(cls) tr.className = cls;
 
       const d = document.createElement("td"); d.className = "dateCell"; d.textContent = fmtDate(e.date);
       const a = document.createElement("td"); a.className = "amountCell"; a.textContent = moneySigned(e.amount);
+      const b = document.createElement("td"); b.className = "balanceCell"; b.textContent = money(bal);
       const n = document.createElement("td"); n.className = "noteCell"; n.textContent = e.note;
-      tr.append(d, a, n);
+      tr.append(d, a, b, n);
 
       if(u){
         const act = document.createElement("td"); act.className = "actionsCell";
@@ -603,7 +617,7 @@
       return tr;
     }
 
-    function cardNode(e, u){
+    function cardNode(e, u, bal){
       const card = document.createElement("div");
       card.className = "card " + rowClass(e.amount);
       const top = document.createElement("div"); top.className = "cardTop";
@@ -616,10 +630,11 @@
         top.appendChild(act);
       }
       card.appendChild(top);
-      if(e.note){
-        const n = document.createElement("div"); n.className = "cardNote"; n.textContent = e.note;
-        card.appendChild(n);
-      }
+      const meta = document.createElement("div"); meta.className = "cardMeta";
+      const n = document.createElement("div"); n.className = "cardNote"; n.textContent = e.note;
+      const b = document.createElement("div"); b.className = "cardBalance"; b.textContent = "zůstatek " + money(bal);
+      meta.append(n, b);
+      card.appendChild(meta);
       return card;
     }
 
