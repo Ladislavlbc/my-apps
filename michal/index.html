@@ -185,6 +185,20 @@
       .cardsWrap{ display:grid; }
     }
 
+    .status{
+      margin-bottom: 12px;
+      padding: 12px 14px;
+      border-radius: 14px;
+      font-size: 14px; font-weight: 600;
+      display:flex; align-items:center; justify-content:space-between; gap: 12px;
+    }
+    .status.loading{ background: rgba(255,255,255,.94); border: 1px solid var(--border); color: var(--muted); }
+    .status.error{ background: var(--neg-bg); border: 1px solid rgba(255,59,48,.25); color: var(--neg-text); }
+    .confirmText{ font-size: 15px; line-height: 1.4; }
+    .btnPrimary.btnDanger{ background: #ff3b30; box-shadow: 0 2px 10px rgba(255,59,48,.28); }
+    .btnPrimary.btnDanger:hover{ background: #e0352b; }
+    .wrap.pending .tableWrap, .wrap.pending .cardsWrap, .wrap.pending .summary{ display:none !important; }
+
     .empty{
       text-align:center;
       color: var(--muted);
@@ -304,7 +318,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
-  <div class="wrap">
+  <div class="wrap pending" id="wrap">
     <header>
       <div class="titleRow">
         <a class="backBtn" href="/" title="Zpět na Moje aplikace" aria-label="Zpět na Moje aplikace">
@@ -325,6 +339,8 @@
       </div>
     </header>
 
+    <div class="status loading" id="status">Načítám záznamy…</div>
+
     <div class="tableWrap">
       <table>
         <thead>
@@ -332,7 +348,7 @@
             <th>Datum</th>
             <th class="num">Částka</th>
             <th class="num">Zůstatek</th>
-            <th>Poznámka</th>
+            <th class="noteCol">Poznámka</th>
             <th class="editCol" hidden></th>
           </tr>
         </thead>
@@ -403,6 +419,22 @@
     </div>
   </div>
 
+  <!-- Modal: confirm -->
+  <div class="modalBackdrop" id="cfBackdrop" aria-hidden="true">
+    <div class="modal" role="alertdialog" aria-modal="true" aria-label="Potvrzení">
+      <div class="modalHead">
+        <div class="h" id="cfTitle">Smazat záznam?</div>
+      </div>
+      <div class="modalBody">
+        <div class="confirmText" id="cfText"></div>
+      </div>
+      <div class="modalFooter">
+        <button class="btnGhost" id="cfCancel" type="button">Zrušit</button>
+        <button class="btnPrimary btnDanger" id="cfOk" type="button">Smazat</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     // =========================
     // Supabase: read-only from the browser (RLS allows SELECT only).
@@ -424,6 +456,8 @@
       modalBackdrop: $("#modalBackdrop"), modalTitle: $("#modalTitle"), signSegment: $("#signSegment"),
       mDate: $("#mDate"), mAmount: $("#mAmount"), mNote: $("#mNote"), formError: $("#formError"),
       btnCloseModal: $("#btnCloseModal"), btnSave: $("#btnSave"), btnDelete: $("#btnDelete"),
+      status: $("#status"),
+      cfBackdrop: $("#cfBackdrop"), cfTitle: $("#cfTitle"), cfText: $("#cfText"), cfOk: $("#cfOk"), cfCancel: $("#cfCancel"),
     };
 
     let entries = [];
@@ -459,13 +493,53 @@
         .select("*")
         .order("entry_date", { ascending: false })
         .order("created_at", { ascending: false });
-      if(error){ console.error("fetchEntries:", error); return entries; }
+      if(error){ console.error("fetchEntries:", error); throw error; }
       return (data || []).map(r => ({ id: r.id, date: r.entry_date, amount: Number(r.amount), note: r.note || "" }));
     }
 
+    let loadedOnce = false;
     async function refreshAll(){
-      entries = await fetchEntries();
+      if(!loadedOnce) showStatus("loading", "Načítám záznamy…");
+      try{
+        entries = await fetchEntries();
+        loadedOnce = true;
+        document.getElementById("wrap").classList.remove("pending");
+        showStatus(null);
+      }catch(err){
+        showStatus("error", "Záznamy se nepodařilo načíst. Zkontrolujte připojení.", true);
+        if(!loadedOnce) return;
+      }
       render();
+    }
+
+    function showStatus(kind, text, retry){
+      if(!kind){ ui.status.hidden = true; return; }
+      ui.status.hidden = false;
+      ui.status.className = "status " + kind;
+      ui.status.textContent = text;
+      if(retry){
+        const b = document.createElement("button");
+        b.className = "btnGhost"; b.type = "button"; b.textContent = "Zkusit znovu";
+        b.addEventListener("click", refreshAll);
+        ui.status.appendChild(b);
+      }
+    }
+
+    // ---------- confirm dialog (replaces window.confirm) ----------
+    let cfResolve = null;
+    function askConfirm(title, text, okLabel){
+      ui.cfTitle.textContent = title;
+      ui.cfText.textContent = text;
+      ui.cfOk.textContent = okLabel || "OK";
+      ui.cfBackdrop.classList.add("show");
+      ui.cfBackdrop.setAttribute("aria-hidden", "false");
+      setTimeout(() => ui.cfOk.focus(), 30);
+      return new Promise(res => { cfResolve = res; });
+    }
+    function closeConfirm(result){
+      ui.cfBackdrop.classList.remove("show");
+      ui.cfBackdrop.setAttribute("aria-hidden", "true");
+      if(cfResolve){ const r = cfResolve; cfResolve = null; r(result); }
     }
 
     async function api(action, entry){
@@ -549,15 +623,18 @@
     // ---------- render ----------
     function rowClass(n){ return n < 0 ? "neg" : (n > 0 ? "pos" : ""); }
 
+    let hasNotes = false;
     function render(){
       const u = isUnlocked();
+      hasNotes = entries.some(e => e.note);
+      document.querySelectorAll(".noteCol").forEach(el => el.hidden = !hasNotes);
       ui.tbody.innerHTML = "";
       ui.cardsWrap.innerHTML = "";
 
       if(entries.length === 0){
         const tr = document.createElement("tr");
         const td = document.createElement("td");
-        td.colSpan = u ? 5 : 4;
+        td.colSpan = 3 + (hasNotes ? 1 : 0) + (u ? 1 : 0);
         td.className = "empty";
         td.textContent = "Zatím tu nejsou žádné záznamy.";
         tr.appendChild(td);
@@ -606,8 +683,11 @@
       const d = document.createElement("td"); d.className = "dateCell"; d.textContent = fmtDate(e.date);
       const a = document.createElement("td"); a.className = "amountCell"; a.textContent = moneySigned(e.amount);
       const b = document.createElement("td"); b.className = "balanceCell"; b.textContent = money(bal);
-      const n = document.createElement("td"); n.className = "noteCell"; n.textContent = e.note;
-      tr.append(d, a, b, n);
+      tr.append(d, a, b);
+      if(hasNotes){
+        const n = document.createElement("td"); n.className = "noteCell"; n.textContent = e.note;
+        tr.appendChild(n);
+      }
 
       if(u){
         const act = document.createElement("td"); act.className = "actionsCell";
@@ -707,6 +787,7 @@
     }
 
     async function saveEntry(){
+      if(ui.btnSave.disabled) return;
       syncSignFromInput();
       const date = ui.mDate.value;
       const abs = parseAmount(ui.mAmount.value);
@@ -729,14 +810,16 @@
     async function deleteEntry(id){
       const e = entries.find(x => x.id === id);
       if(!e) return;
-      if(!confirm(`Smazat záznam z ${fmtDate(e.date)} (${moneySigned(e.amount)})?`)) return;
+      const ok = await askConfirm("Smazat záznam?", `Záznam z ${fmtDate(e.date)} (${moneySigned(e.amount)}) bude trvale odstraněn.`, "Smazat");
+      if(!ok) return;
       try{
         await api("delete", { id });
         if(editingId === id) closeModal();
         await refreshAll();
       }catch(err){
-        alert(err.message);
-        if(!isUnlocked()) openPw();
+        if(ui.modalBackdrop.classList.contains("show")) ui.formError.textContent = err.message;
+        else showStatus("error", err.message, false);
+        if(!isUnlocked()){ closeModal(); openPw(); }
       }
     }
 
@@ -752,9 +835,20 @@
     ui.btnCloseModal.addEventListener("click", closeModal);
     ui.modalBackdrop.addEventListener("click", (e) => { if(e.target === ui.modalBackdrop) closeModal(); });
     ui.btnSave.addEventListener("click", saveEntry);
+    // Enter in date/amount saves; Ctrl+Enter saves from the note.
+    [ui.mDate, ui.mAmount].forEach(el => el.addEventListener("keydown", (e) => {
+      if(e.key === "Enter"){ e.preventDefault(); saveEntry(); }
+    }));
+    ui.mNote.addEventListener("keydown", (e) => {
+      if(e.key === "Enter" && (e.ctrlKey || e.metaKey)){ e.preventDefault(); saveEntry(); }
+    });
+    ui.cfOk.addEventListener("click", () => closeConfirm(true));
+    ui.cfCancel.addEventListener("click", () => closeConfirm(false));
+    ui.cfBackdrop.addEventListener("click", (e) => { if(e.target === ui.cfBackdrop) closeConfirm(false); });
     ui.btnDelete.addEventListener("click", () => deleteEntry(editingId));
     window.addEventListener("keydown", (e) => {
       if(e.key !== "Escape") return;
+      if(ui.cfBackdrop.classList.contains("show")){ closeConfirm(false); return; }
       if(ui.modalBackdrop.classList.contains("show")) closeModal();
       if(ui.pwBackdrop.classList.contains("show")) closePw();
     });
