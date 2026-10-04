@@ -1,0 +1,743 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Michal</title>
+
+  <style>
+    :root{
+      --bg: #f2f2f7;
+      --border: rgba(60, 60, 67, .13);
+      --text: #1c1c1e;
+      --muted: rgba(60, 60, 67, .60);
+      --shadow: 0 14px 30px rgba(0, 0, 0, .10);
+      --shadow2: 0 2px 10px rgba(0, 0, 0, .06);
+      --radius-xl: 20px;
+
+      --accent: #007aff;
+      --accent2: #0a84ff;
+      --teal: #30b0c7;
+
+      --neg-bg: rgba(255, 59, 48, .09);
+      --neg-text: #c4392f;
+      --pos-bg: rgba(52, 199, 89, .12);
+      --pos-text: #23873c;
+    }
+
+    *{ box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
+    html,body{ height:100%; }
+    body{
+      margin:0;
+      font-family: -apple-system, ui-sans-serif, system-ui, "SF Pro Text", "Segoe UI", Roboto, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      color:var(--text);
+      background: var(--bg);
+    }
+
+    .wrap{ max-width: 760px; margin: 0 auto; padding: 28px 18px 42px; }
+
+    header{
+      display:flex; align-items:flex-end; justify-content:space-between;
+      gap: 12px; margin-bottom: 18px; flex-wrap: wrap;
+    }
+    @media (max-width: 700px){
+      header{ flex-direction:column; align-items:flex-start; }
+    }
+
+    .titleRow{ display:flex; align-items:center; gap: 14px; }
+    .backBtn{
+      width: 40px; height: 40px; flex-shrink: 0;
+      border-radius: 14px;
+      display:grid; place-items:center;
+      background: rgba(255,255,255,.86);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow2);
+      color: var(--text);
+      text-decoration:none;
+      transition: .15s ease;
+    }
+    .backBtn:hover{ transform: translateY(-1px); box-shadow: var(--shadow); }
+    .backBtn:active{ transform: scale(.96); }
+    .iconSvg{ stroke: currentColor; }
+
+    .title h1{
+      margin:0;
+      font-size: 34px;
+      letter-spacing:-.03em;
+      font-weight: 800;
+      display: inline-block;
+      background: var(--teal);
+      color: #fff;
+      padding: 4px 14px;
+      border-radius: 10px;
+    }
+    .title .sub{ margin-top:4px; font-size: 13px; color:var(--muted); }
+
+    .toolbar{ display:flex; gap:8px; }
+    .btnGhost{
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.86);
+      color: rgba(28,28,30,.75);
+      padding: 10px 12px;
+      border-radius: 14px;
+      cursor:pointer;
+      font-size: 13px;
+      font-weight: 650;
+      font-family: inherit;
+      transition: .15s ease;
+    }
+    .btnGhost:hover{ transform: translateY(-1px); box-shadow: var(--shadow2); }
+    .btnGhost.danger:hover{ border-color: rgba(255,59,48,.25); color: #ff3b30; }
+
+    .btnPrimary{
+      border:0; cursor:pointer;
+      border-radius: 14px;
+      padding: 11px 16px;
+      background: var(--accent);
+      color: #fff;
+      font-weight: 650;
+      font-size: 14px;
+      font-family: inherit;
+      box-shadow: 0 2px 10px rgba(0,122,255,.28);
+      transition: .15s ease;
+      white-space: nowrap;
+    }
+    .btnPrimary:hover{ background: var(--accent2); }
+    .btnPrimary:active{ transform: scale(.97); }
+    .btnPrimary:disabled{ opacity: .6; cursor: default; }
+
+    [hidden]{ display:none !important; }
+
+    /* table */
+    .tableWrap{
+      overflow-x: auto;
+      border-radius: var(--radius-xl);
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.94);
+      box-shadow: var(--shadow2);
+    }
+    table{ width:100%; border-collapse: collapse; font-size: 14px; }
+    thead th{
+      text-align:left;
+      padding: 9px 14px;
+      font-size: 11px;
+      font-weight: 850;
+      letter-spacing:.05em;
+      text-transform: uppercase;
+      color: var(--muted);
+      white-space:nowrap;
+      border-bottom: 1px solid var(--border);
+    }
+    thead th.num{ text-align:right; }
+    tbody td{
+      padding: 8px 14px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+    tbody tr:last-child td{ border-bottom: 0; }
+    tr.neg{ background: var(--neg-bg); }
+    tr.pos{ background: var(--pos-bg); }
+    .dateCell{ white-space:nowrap; font-weight: 600; }
+    .amountCell{ text-align:right; white-space:nowrap; font-weight: 750; font-variant-numeric: tabular-nums; }
+    tr.neg .amountCell, .card.neg .cardAmount{ color: var(--neg-text); }
+    tr.pos .amountCell, .card.pos .cardAmount{ color: var(--pos-text); }
+    .noteCell{ color: var(--muted); }
+    .actionsCell{ text-align:right; white-space:nowrap; width: 1%; }
+
+    .editRowBtn, .delRowBtn{
+      width: 28px; height: 28px;
+      border-radius: 9px;
+      border: 1px solid rgba(28,28,30,.10);
+      background: rgba(255,255,255,.9);
+      cursor:pointer;
+      display:inline-grid; place-items:center;
+      transition: .15s ease;
+      color: rgba(28,28,30,.60);
+    }
+    .editRowBtn{ margin-right: 6px; }
+    .editRowBtn:hover{ background: rgba(0,122,255,.12); border-color: rgba(0,122,255,.25); color: var(--accent); }
+    .delRowBtn{ color: rgba(255,59,48,.85); }
+    .delRowBtn:hover{ background: rgba(255,59,48,.12); border-color: rgba(255,59,48,.25); }
+    .editRowBtn svg, .delRowBtn svg{ width:14px; height:14px; }
+
+    /* mobile cards */
+    .cardsWrap{ display:none; gap: 6px; }
+    .card{
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow2);
+      padding: 9px 12px;
+      background: rgba(255,255,255,.94);
+    }
+    .card.neg{ background: #fdf0ef; }
+    .card.pos{ background: #eef8f1; }
+    .cardTop{ display:flex; align-items:center; gap:10px; }
+    .cardDate{ font-weight: 650; font-size: 14px; flex:1; }
+    .cardAmount{ font-weight: 800; font-size: 15px; white-space:nowrap; font-variant-numeric: tabular-nums; }
+    .cardNote{ margin-top: 3px; font-size: 12px; color: var(--muted); }
+
+    @media (max-width: 700px){
+      .tableWrap{ display:none; }
+      .cardsWrap{ display:grid; }
+    }
+
+    .empty{
+      text-align:center;
+      color: var(--muted);
+      font-weight: 600;
+      padding: 40px 16px;
+    }
+
+    /* summary */
+    .summary{
+      margin-top: 14px;
+      padding: 16px 18px;
+      border-radius: var(--radius-xl);
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.94);
+      box-shadow: var(--shadow2);
+    }
+    .sumRow{ display:flex; align-items:baseline; justify-content:space-between; gap: 12px; }
+    .sumLabel{ font-size: 13px; font-weight: 750; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+    .sumValue{ font-size: 28px; font-weight: 800; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+    .sumValue.neg{ color: var(--neg-text); }
+    .sumValue.pos{ color: var(--pos-text); }
+
+    .progress{ margin-top: 14px; }
+    .bar{
+      height: 12px;
+      border-radius: 999px;
+      background: rgba(120,120,128,.14);
+      overflow:hidden;
+    }
+    .barFill{
+      height:100%;
+      width: 0;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #30b0c7, #34c759);
+      transition: width .6s ease;
+    }
+    .progressText{ margin-top: 7px; font-size: 13px; color: var(--muted); }
+    .progressText b{ color: var(--text); }
+
+    /* modal */
+    .modalBackdrop{
+      position: fixed; inset: 0;
+      background: rgba(2, 6, 23, .45);
+      display:none;
+      align-items:center; justify-content:center;
+      padding: 18px;
+      z-index: 50;
+    }
+    .modalBackdrop.show{ display:flex; }
+    .modal{
+      width: min(460px, 100%);
+      background: rgba(255,255,255,.97);
+      border-radius: 22px;
+      box-shadow: 0 30px 80px rgba(0,0,0,.25);
+      overflow:hidden;
+    }
+    .modalHead{
+      padding: 14px 16px;
+      display:flex; align-items:center; justify-content:space-between;
+      gap: 12px;
+      border-bottom: 1px solid rgba(15,23,42,.10);
+    }
+    .modalHead .h{ font-weight: 800; letter-spacing:-.02em; }
+    .modalBody{ padding: 14px 16px 16px; display:grid; gap: 10px; }
+    .modalFooter{
+      padding: 14px 16px;
+      display:flex; justify-content:flex-end; gap: 10px;
+      border-top: 1px solid rgba(15,23,42,.10);
+      background: rgba(255,255,255,.70);
+    }
+    .field{
+      display:flex; align-items:center; gap: 8px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.88);
+      box-shadow: var(--shadow2);
+    }
+    .field label{ font-size: 12px; color: rgba(28,28,30,.55); font-weight: 750; white-space: nowrap; }
+    .field .suffix{ font-size: 14px; color: var(--muted); font-weight: 650; }
+    input, textarea{
+      border: 0; outline: none; background: transparent;
+      font-size: 16px; color: rgba(28,28,30,.9);
+      width: 100%; font-family: inherit;
+    }
+    textarea{
+      resize: vertical; min-height: 60px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.88);
+      box-shadow: var(--shadow2);
+    }
+
+    .segment{
+      display:grid; grid-template-columns: 1fr 1fr;
+      padding: 3px;
+      border-radius: 14px;
+      background: rgba(120,120,128,.12);
+    }
+    .segment button{
+      border:0; background: transparent;
+      padding: 9px 10px;
+      border-radius: 11px;
+      font-size: 14px; font-weight: 700; font-family: inherit;
+      color: rgba(28,28,30,.6);
+      cursor:pointer;
+      transition: .15s ease;
+    }
+    .segment button.active{ background:#fff; box-shadow: 0 1px 4px rgba(0,0,0,.12); }
+    .segment button.active[data-sign="-1"]{ color: var(--neg-text); }
+    .segment button.active[data-sign="1"]{ color: var(--pos-text); }
+
+    .formError{ font-size: 13px; color: #ff3b30; font-weight: 600; min-height: 1em; }
+  </style>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="titleRow">
+        <a class="backBtn" href="/" title="Zpět na Moje aplikace" aria-label="Zpět na Moje aplikace">
+          <svg class="iconSvg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M15 18l-6-6 6-6"/>
+          </svg>
+        </a>
+        <div class="title">
+          <h1>Michal</h1>
+          <div class="sub">Společný přehled plateb</div>
+        </div>
+      </div>
+
+      <div class="toolbar">
+        <button class="btnGhost" id="btnUnlock" type="button">🔒 Upravit</button>
+        <button class="btnGhost" id="btnLock" type="button" hidden>Zamknout</button>
+        <button class="btnPrimary" id="btnAdd" type="button" hidden>+ Přidat záznam</button>
+      </div>
+    </header>
+
+    <div class="tableWrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Datum</th>
+            <th class="num">Částka</th>
+            <th>Poznámka</th>
+            <th class="editCol" hidden></th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+
+    <div class="cardsWrap" id="cardsWrap"></div>
+
+    <div class="summary">
+      <div class="sumRow">
+        <span class="sumLabel">Aktuální stav</span>
+        <span class="sumValue" id="sumValue">–</span>
+      </div>
+      <div class="progress" id="progress" hidden>
+        <div class="bar"><div class="barFill" id="barFill"></div></div>
+        <div class="progressText" id="progressText"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: password -->
+  <div class="modalBackdrop" id="pwBackdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-label="Heslo">
+      <div class="modalHead">
+        <div class="h">Úpravy jsou chráněné heslem</div>
+        <button class="btnGhost danger" id="pwClose" type="button">Zavřít</button>
+      </div>
+      <form class="modalBody" id="pwForm">
+        <div class="field">
+          <label for="pwInput">Heslo</label>
+          <input id="pwInput" type="password" autocomplete="current-password"/>
+        </div>
+        <div class="formError" id="pwError"></div>
+        <button class="btnPrimary" id="pwSubmit" type="submit">Odemknout</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: add/edit entry -->
+  <div class="modalBackdrop" id="modalBackdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-label="Záznam">
+      <div class="modalHead">
+        <div class="h" id="modalTitle">Nový záznam</div>
+        <button class="btnGhost danger" id="btnCloseModal" type="button">Zavřít</button>
+      </div>
+      <div class="modalBody">
+        <div class="segment" id="signSegment">
+          <button type="button" data-sign="-1">Půjčeno (−)</button>
+          <button type="button" data-sign="1">Vráceno (+)</button>
+        </div>
+        <div class="field">
+          <label for="mDate">Datum</label>
+          <input id="mDate" type="date"/>
+        </div>
+        <div class="field">
+          <label for="mAmount">Částka</label>
+          <input id="mAmount" inputmode="decimal" placeholder="0" autocomplete="off"/>
+          <span class="suffix">Kč</span>
+        </div>
+        <textarea id="mNote" placeholder="Poznámka (nepovinné)…" maxlength="500"></textarea>
+        <div class="formError" id="formError"></div>
+      </div>
+      <div class="modalFooter">
+        <button class="btnGhost danger" id="btnDelete" type="button">Smazat</button>
+        <button class="btnPrimary" id="btnSave" type="button">Uložit</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // =========================
+    // Supabase: read-only from the browser (RLS allows SELECT only).
+    // All writes go through /api/michal, which checks the password.
+    // =========================
+    const SUPABASE_URL = "https://nvniycrgdfvgphcvptsh.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_gkHDuvNM75l5krS0vPQegA_FaQzI0jG";
+    const TABLE = "michal_entries";
+    const PW_KEY = "michal_pw";
+
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    const $ = (s) => document.querySelector(s);
+    const ui = {
+      tbody: $("#tbody"), cardsWrap: $("#cardsWrap"),
+      sumValue: $("#sumValue"), progress: $("#progress"), barFill: $("#barFill"), progressText: $("#progressText"),
+      btnUnlock: $("#btnUnlock"), btnLock: $("#btnLock"), btnAdd: $("#btnAdd"),
+      pwBackdrop: $("#pwBackdrop"), pwForm: $("#pwForm"), pwInput: $("#pwInput"), pwError: $("#pwError"), pwSubmit: $("#pwSubmit"), pwClose: $("#pwClose"),
+      modalBackdrop: $("#modalBackdrop"), modalTitle: $("#modalTitle"), signSegment: $("#signSegment"),
+      mDate: $("#mDate"), mAmount: $("#mAmount"), mNote: $("#mNote"), formError: $("#formError"),
+      btnCloseModal: $("#btnCloseModal"), btnSave: $("#btnSave"), btnDelete: $("#btnDelete"),
+    };
+
+    let entries = [];
+    let editingId = null;
+    let sign = -1;
+    let password = null;
+    try{ password = sessionStorage.getItem(PW_KEY); }catch(e){}
+
+    // ---------- formatting ----------
+    const moneyFmt0 = new Intl.NumberFormat("cs-CZ", { style: "currency", currency: "CZK", minimumFractionDigits: 0, maximumFractionDigits: 0 });
+    const moneyFmt2 = new Intl.NumberFormat("cs-CZ", { style: "currency", currency: "CZK", minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const money = (n) => (Number.isInteger(Math.round(n * 100) / 100) ? moneyFmt0 : moneyFmt2).format(n);
+    const moneySigned = (n) => (n > 0 ? "+" : "") + money(n);
+    const dateFmt = new Intl.DateTimeFormat("cs-CZ", { day: "numeric", month: "numeric", year: "numeric" });
+    const fmtDate = (iso) => dateFmt.format(new Date(iso + "T00:00:00"));
+
+    function todayIso(){
+      const d = new Date();
+      return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+    }
+
+    function pencilSvg(){
+      return `<svg class="iconSvg" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4 11.5-11.5z"/></svg>`;
+    }
+    function trashSvg(){
+      return `<svg class="iconSvg" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>`;
+    }
+
+    // ---------- data ----------
+    async function fetchEntries(){
+      const { data, error } = await supabaseClient
+        .from(TABLE)
+        .select("*")
+        .order("entry_date", { ascending: false })
+        .order("created_at", { ascending: false });
+      if(error){ console.error("fetchEntries:", error); return entries; }
+      return (data || []).map(r => ({ id: r.id, date: r.entry_date, amount: Number(r.amount), note: r.note || "" }));
+    }
+
+    async function refreshAll(){
+      entries = await fetchEntries();
+      render();
+    }
+
+    async function api(action, entry){
+      const res = await fetch("/api/michal", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password, action, entry }),
+      });
+      if(res.status === 401){
+        lock();
+        throw new Error("Heslo nesouhlasí.");
+      }
+      if(!res.ok){
+        const j = await res.json().catch(() => ({}));
+        throw new Error(j.error || "Uložení se nepovedlo.");
+      }
+      return res.json();
+    }
+
+    // ---------- lock state ----------
+    const isUnlocked = () => !!password;
+
+    function applyLockUi(){
+      const u = isUnlocked();
+      ui.btnUnlock.hidden = u;
+      ui.btnLock.hidden = !u;
+      ui.btnAdd.hidden = !u;
+      document.querySelectorAll(".editCol").forEach(el => el.hidden = !u);
+    }
+
+    function lock(){
+      password = null;
+      try{ sessionStorage.removeItem(PW_KEY); }catch(e){}
+      applyLockUi();
+      render();
+    }
+
+    function openPw(){
+      ui.pwInput.value = "";
+      ui.pwError.textContent = "";
+      ui.pwBackdrop.classList.add("show");
+      ui.pwBackdrop.setAttribute("aria-hidden", "false");
+      setTimeout(() => ui.pwInput.focus(), 30);
+    }
+    function closePw(){
+      ui.pwBackdrop.classList.remove("show");
+      ui.pwBackdrop.setAttribute("aria-hidden", "true");
+    }
+
+    async function submitPw(e){
+      e.preventDefault();
+      const pw = ui.pwInput.value;
+      if(!pw) return;
+      ui.pwSubmit.disabled = true;
+      ui.pwError.textContent = "";
+      try{
+        const res = await fetch("/api/michal", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ password: pw, action: "verify" }),
+        });
+        if(res.ok){
+          password = pw;
+          try{ sessionStorage.setItem(PW_KEY, pw); }catch(err){}
+          closePw();
+          applyLockUi();
+          render();
+        }else if(res.status === 401){
+          ui.pwError.textContent = "Heslo nesouhlasí, zkuste to znovu.";
+        }else{
+          const j = await res.json().catch(() => ({}));
+          ui.pwError.textContent = j.error || "Ověření se nepovedlo.";
+        }
+      }catch(err){
+        ui.pwError.textContent = "Nepodařilo se spojit se serverem.";
+      }finally{
+        ui.pwSubmit.disabled = false;
+      }
+    }
+
+    // ---------- render ----------
+    function rowClass(n){ return n < 0 ? "neg" : (n > 0 ? "pos" : ""); }
+
+    function render(){
+      const u = isUnlocked();
+      ui.tbody.innerHTML = "";
+      ui.cardsWrap.innerHTML = "";
+
+      if(entries.length === 0){
+        const tr = document.createElement("tr");
+        const td = document.createElement("td");
+        td.colSpan = u ? 4 : 3;
+        td.className = "empty";
+        td.textContent = "Zatím tu nejsou žádné záznamy.";
+        tr.appendChild(td);
+        ui.tbody.appendChild(tr);
+        const empty = document.createElement("div");
+        empty.className = "empty";
+        empty.textContent = "Zatím tu nejsou žádné záznamy.";
+        ui.cardsWrap.appendChild(empty);
+      }
+
+      entries.forEach(e => {
+        ui.tbody.appendChild(rowNode(e, u));
+        ui.cardsWrap.appendChild(cardNode(e, u));
+      });
+
+      renderSummary();
+    }
+
+    function actionButtons(e){
+      const frag = document.createDocumentFragment();
+      const edit = document.createElement("button");
+      edit.className = "editRowBtn"; edit.type = "button"; edit.title = "Upravit";
+      edit.innerHTML = pencilSvg();
+      edit.addEventListener("click", (ev) => { ev.stopPropagation(); openModal(e.id); });
+      const del = document.createElement("button");
+      del.className = "delRowBtn"; del.type = "button"; del.title = "Smazat";
+      del.innerHTML = trashSvg();
+      del.addEventListener("click", (ev) => { ev.stopPropagation(); deleteEntry(e.id); });
+      frag.appendChild(edit); frag.appendChild(del);
+      return frag;
+    }
+
+    function rowNode(e, u){
+      const tr = document.createElement("tr");
+      const cls = rowClass(e.amount);
+      if(cls) tr.className = cls;
+
+      const d = document.createElement("td"); d.className = "dateCell"; d.textContent = fmtDate(e.date);
+      const a = document.createElement("td"); a.className = "amountCell"; a.textContent = moneySigned(e.amount);
+      const n = document.createElement("td"); n.className = "noteCell"; n.textContent = e.note;
+      tr.append(d, a, n);
+
+      if(u){
+        const act = document.createElement("td"); act.className = "actionsCell";
+        act.appendChild(actionButtons(e));
+        tr.appendChild(act);
+      }
+      return tr;
+    }
+
+    function cardNode(e, u){
+      const card = document.createElement("div");
+      card.className = "card " + rowClass(e.amount);
+      const top = document.createElement("div"); top.className = "cardTop";
+      const d = document.createElement("span"); d.className = "cardDate"; d.textContent = fmtDate(e.date);
+      const a = document.createElement("span"); a.className = "cardAmount"; a.textContent = moneySigned(e.amount);
+      top.append(d, a);
+      if(u){
+        const act = document.createElement("div");
+        act.appendChild(actionButtons(e));
+        top.appendChild(act);
+      }
+      card.appendChild(top);
+      if(e.note){
+        const n = document.createElement("div"); n.className = "cardNote"; n.textContent = e.note;
+        card.appendChild(n);
+      }
+      return card;
+    }
+
+    function renderSummary(){
+      const total = entries.reduce((s, e) => s + e.amount, 0);
+      const lent = entries.filter(e => e.amount < 0).reduce((s, e) => s - e.amount, 0);
+      const repaid = entries.filter(e => e.amount > 0).reduce((s, e) => s + e.amount, 0);
+      const rounded = Math.round(total * 100) / 100;
+
+      ui.sumValue.className = "sumValue " + rowClass(rounded);
+      if(entries.length > 0 && lent > 0 && rounded >= 0){
+        ui.sumValue.textContent = "Vyrovnáno 🎉";
+        ui.sumValue.className = "sumValue pos";
+      }else{
+        ui.sumValue.textContent = entries.length ? moneySigned(rounded) : "–";
+      }
+
+      if(lent > 0){
+        const pct = Math.max(0, Math.min(100, Math.round(repaid / lent * 100)));
+        ui.progress.hidden = false;
+        requestAnimationFrame(() => { ui.barFill.style.width = pct + "%"; });
+        ui.progressText.innerHTML = "";
+        const b1 = document.createElement("b"); b1.textContent = money(repaid);
+        const b2 = document.createElement("b"); b2.textContent = pct + " %";
+        ui.progressText.append("Vráceno ", b1, ` z ${money(lent)} · `, b2);
+      }else{
+        ui.progress.hidden = true;
+      }
+    }
+
+    // ---------- add / edit ----------
+    function setSign(s){
+      sign = s;
+      ui.signSegment.querySelectorAll("button").forEach(b => b.classList.toggle("active", Number(b.dataset.sign) === s));
+    }
+
+    function openModal(id){
+      if(!isUnlocked()){ openPw(); return; }
+      editingId = id || null;
+      const e = id ? entries.find(x => x.id === id) : null;
+      ui.modalTitle.textContent = e ? "Upravit záznam" : "Nový záznam";
+      setSign(e ? (e.amount < 0 ? -1 : 1) : 1);
+      ui.mDate.value = e ? e.date : todayIso();
+      ui.mAmount.value = e ? String(Math.abs(e.amount)).replace(".", ",") : "";
+      ui.mNote.value = e ? e.note : "";
+      ui.formError.textContent = "";
+      ui.btnDelete.style.display = e ? "" : "none";
+      ui.modalBackdrop.classList.add("show");
+      ui.modalBackdrop.setAttribute("aria-hidden", "false");
+      setTimeout(() => ui.mAmount.focus(), 30);
+    }
+
+    function closeModal(){
+      ui.modalBackdrop.classList.remove("show");
+      ui.modalBackdrop.setAttribute("aria-hidden", "true");
+      editingId = null;
+    }
+
+    function parseAmount(str){
+      const clean = String(str).replace(/\s|Kč/gi, "").replace(",", ".").replace(/^[-+]/, "");
+      const n = Number(clean);
+      return Number.isFinite(n) && n > 0 ? Math.round(n * 100) / 100 : null;
+    }
+
+    async function saveEntry(){
+      const date = ui.mDate.value;
+      const abs = parseAmount(ui.mAmount.value);
+      if(!date){ ui.formError.textContent = "Vyplňte prosím datum."; return; }
+      if(abs === null){ ui.formError.textContent = "Zadejte prosím kladnou částku."; return; }
+      const entry = { id: editingId || undefined, date, amount: sign * abs, note: ui.mNote.value.trim() };
+      ui.btnSave.disabled = true;
+      try{
+        await api(editingId ? "update" : "insert", entry);
+        closeModal();
+        await refreshAll();
+      }catch(err){
+        ui.formError.textContent = err.message;
+        if(!isUnlocked()){ closeModal(); openPw(); }
+      }finally{
+        ui.btnSave.disabled = false;
+      }
+    }
+
+    async function deleteEntry(id){
+      const e = entries.find(x => x.id === id);
+      if(!e) return;
+      if(!confirm(`Smazat záznam z ${fmtDate(e.date)} (${moneySigned(e.amount)})?`)) return;
+      try{
+        await api("delete", { id });
+        if(editingId === id) closeModal();
+        await refreshAll();
+      }catch(err){
+        alert(err.message);
+        if(!isUnlocked()) openPw();
+      }
+    }
+
+    // ---------- events ----------
+    ui.btnUnlock.addEventListener("click", openPw);
+    ui.btnLock.addEventListener("click", lock);
+    ui.btnAdd.addEventListener("click", () => openModal(null));
+    ui.pwForm.addEventListener("submit", submitPw);
+    ui.pwClose.addEventListener("click", closePw);
+    ui.pwBackdrop.addEventListener("click", (e) => { if(e.target === ui.pwBackdrop) closePw(); });
+    ui.signSegment.addEventListener("click", (e) => { const b = e.target.closest("button"); if(b) setSign(Number(b.dataset.sign)); });
+    ui.btnCloseModal.addEventListener("click", closeModal);
+    ui.modalBackdrop.addEventListener("click", (e) => { if(e.target === ui.modalBackdrop) closeModal(); });
+    ui.btnSave.addEventListener("click", saveEntry);
+    ui.btnDelete.addEventListener("click", () => deleteEntry(editingId));
+    window.addEventListener("keydown", (e) => {
+      if(e.key !== "Escape") return;
+      if(ui.modalBackdrop.classList.contains("show")) closeModal();
+      if(ui.pwBackdrop.classList.contains("show")) closePw();
+    });
+    document.addEventListener("visibilitychange", () => { if(document.visibilityState === "visible") refreshAll(); });
+
+    applyLockUi();
+    refreshAll();
+  </script>
+</body>
+</html>
