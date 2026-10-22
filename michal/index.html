@@ -248,6 +248,8 @@
       z-index: 50;
     }
     .modalBackdrop.show{ display:flex; }
+    body.locked .wrap{ visibility:hidden; }
+    body.locked #pwBackdrop{ background: var(--bg); }
     .modal{
       width: min(460px, 100%);
       background: rgba(255,255,255,.97);
@@ -315,9 +317,8 @@
     .formError{ font-size: 13px; color: #ff3b30; font-weight: 600; min-height: 1em; }
   </style>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-<body>
+<body class="locked">
   <div class="wrap pending" id="wrap">
     <header>
       <div class="titleRow">
@@ -333,8 +334,9 @@
       </div>
 
       <div class="toolbar">
-        <button class="btnGhost" id="btnUnlock" type="button">🔒 Upravit</button>
-        <button class="btnGhost" id="btnLock" type="button" hidden>Zamknout</button>
+        <button class="btnGhost" id="btnEdit" type="button" hidden>✏️ Upravit</button>
+        <button class="btnGhost" id="btnEndEdit" type="button" hidden>Ukončit úpravy</button>
+        <button class="btnGhost" id="btnLock" type="button" hidden>🔒 Zamknout</button>
         <button class="btnPrimary" id="btnAdd" type="button" hidden>+ Přidat záznam</button>
       </div>
     </header>
@@ -374,8 +376,8 @@
   <div class="modalBackdrop" id="pwBackdrop" aria-hidden="true">
     <div class="modal" role="dialog" aria-modal="true" aria-label="Heslo">
       <div class="modalHead">
-        <div class="h">Úpravy jsou chráněné heslem</div>
-        <button class="btnGhost danger" id="pwClose" type="button">Zavřít</button>
+        <div class="h" id="pwTitle">Michal – zadejte heslo</div>
+        <a class="btnGhost" id="pwClose" href="/">Zpět</a>
       </div>
       <form class="modalBody" id="pwForm">
         <div class="field">
@@ -437,21 +439,19 @@
 
   <script>
     // =========================
-    // Supabase: read-only from the browser (RLS allows SELECT only).
-    // All writes go through /api/michal, which checks the password.
+    // The whole app is behind a password (MICHAL_PASSWORD env var on Vercel).
+    // Reads and writes both go through /api/michal, which checks the password;
+    // the browser never talks to Supabase directly.
     // =========================
-    const SUPABASE_URL = "https://nvniycrgdfvgphcvptsh.supabase.co";
-    const SUPABASE_KEY = "sb_publishable_gkHDuvNM75l5krS0vPQegA_FaQzI0jG";
-    const TABLE = "michal_entries";
     const PW_KEY = "michal_pw";
-
-    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const EDIT_PW_KEY = "michal_edit_pw";
 
     const $ = (s) => document.querySelector(s);
     const ui = {
       tbody: $("#tbody"), cardsWrap: $("#cardsWrap"),
       sumValue: $("#sumValue"), progress: $("#progress"), barFill: $("#barFill"), progressText: $("#progressText"),
-      btnUnlock: $("#btnUnlock"), btnLock: $("#btnLock"), btnAdd: $("#btnAdd"),
+      btnEdit: $("#btnEdit"), btnEndEdit: $("#btnEndEdit"), pwTitle: $("#pwTitle"),
+      btnLock: $("#btnLock"), btnAdd: $("#btnAdd"),
       pwBackdrop: $("#pwBackdrop"), pwForm: $("#pwForm"), pwInput: $("#pwInput"), pwError: $("#pwError"), pwSubmit: $("#pwSubmit"), pwClose: $("#pwClose"),
       modalBackdrop: $("#modalBackdrop"), modalTitle: $("#modalTitle"), signSegment: $("#signSegment"),
       mDate: $("#mDate"), mAmount: $("#mAmount"), mNote: $("#mNote"), formError: $("#formError"),
@@ -464,7 +464,9 @@
     let editingId = null;
     let sign = -1;
     let password = null;
-    try{ password = sessionStorage.getItem(PW_KEY); }catch(e){}
+    let editPassword = null;
+    let pwMode = "view"; // "view" = opening the app, "edit" = unlocking edits
+    try{ password = sessionStorage.getItem(PW_KEY); editPassword = sessionStorage.getItem(EDIT_PW_KEY); }catch(e){}
 
     // ---------- formatting ----------
     const moneyFmt0 = new Intl.NumberFormat("cs-CZ", { style: "currency", currency: "CZK", minimumFractionDigits: 0, maximumFractionDigits: 0 });
@@ -488,24 +490,23 @@
 
     // ---------- data ----------
     async function fetchEntries(){
-      const { data, error } = await supabaseClient
-        .from(TABLE)
-        .select("*")
-        .order("entry_date", { ascending: false })
-        .order("created_at", { ascending: false });
-      if(error){ console.error("fetchEntries:", error); throw error; }
-      return (data || []).map(r => ({ id: r.id, date: r.entry_date, amount: Number(r.amount), note: r.note || "" }));
+      const { rows } = await api("list");
+      return (rows || []).map(r => ({ id: r.id, date: r.entry_date, amount: Number(r.amount), note: r.note || "" }));
     }
 
     let loadedOnce = false;
     async function refreshAll(){
+      if(!isOpen()) return;
       if(!loadedOnce) showStatus("loading", "Načítám záznamy…");
       try{
         entries = await fetchEntries();
+        if(!isOpen()) return;
         loadedOnce = true;
         document.getElementById("wrap").classList.remove("pending");
         showStatus(null);
       }catch(err){
+        console.error("refreshAll:", err);
+        if(!isOpen()) return;
         showStatus("error", "Záznamy se nepodařilo načíst. Zkontrolujte připojení.", true);
         if(!loadedOnce) return;
       }
@@ -546,11 +547,15 @@
       const res = await fetch("/api/michal", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password, action, entry }),
+        body: JSON.stringify({ password, editPassword, action, entry }),
       });
       if(res.status === 401){
         lock();
         throw new Error("Heslo nesouhlasí.");
+      }
+      if(res.status === 403){
+        endEdit();
+        throw new Error("Heslo pro úpravy nesouhlasí.");
       }
       if(!res.ok){
         const j = await res.json().catch(() => ({}));
@@ -560,24 +565,44 @@
     }
 
     // ---------- lock state ----------
-    const isUnlocked = () => !!password;
+    const isOpen = () => !!password;                         // app unlocked (can read)
+    const isUnlocked = () => !!password && !!editPassword;   // edits unlocked
 
     function applyLockUi(){
+      const o = isOpen();
       const u = isUnlocked();
-      ui.btnUnlock.hidden = u;
-      ui.btnLock.hidden = !u;
+      document.body.classList.toggle("locked", !o);
+      ui.btnLock.hidden = !o;
+      ui.btnEdit.hidden = !o || u;
+      ui.btnEndEdit.hidden = !u;
       ui.btnAdd.hidden = !u;
       document.querySelectorAll(".editCol").forEach(el => el.hidden = !u);
     }
 
-    function lock(){
-      password = null;
-      try{ sessionStorage.removeItem(PW_KEY); }catch(e){}
+    function endEdit(){
+      editPassword = null;
+      try{ sessionStorage.removeItem(EDIT_PW_KEY); }catch(e){}
+      closeModal();
       applyLockUi();
       render();
     }
 
-    function openPw(){
+    function lock(){
+      password = null;
+      editPassword = null;
+      try{ sessionStorage.removeItem(PW_KEY); sessionStorage.removeItem(EDIT_PW_KEY); }catch(e){}
+      entries = [];
+      closeModal();
+      applyLockUi();
+      render();
+      openPw();
+    }
+
+    function openPw(mode){
+      pwMode = mode === "edit" ? "edit" : "view";
+      ui.pwTitle.textContent = pwMode === "edit" ? "Heslo pro úpravy" : "Michal – zadejte heslo";
+      ui.pwClose.textContent = pwMode === "edit" ? "Zavřít" : "Zpět";
+      ui.pwSubmit.textContent = pwMode === "edit" ? "Povolit úpravy" : "Odemknout";
       ui.pwInput.value = "";
       ui.pwError.textContent = "";
       ui.pwBackdrop.classList.add("show");
@@ -596,18 +621,32 @@
       ui.pwSubmit.disabled = true;
       ui.pwError.textContent = "";
       try{
+        const edit = pwMode === "edit";
         const res = await fetch("/api/michal", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ password: pw, action: "verify" }),
+          body: JSON.stringify(edit
+            ? { password, editPassword: pw, action: "verifyEdit" }
+            : { password: pw, action: "verify" }),
         });
         if(res.ok){
-          password = pw;
-          try{ sessionStorage.setItem(PW_KEY, pw); }catch(err){}
+          if(edit){
+            editPassword = pw;
+            try{ sessionStorage.setItem(EDIT_PW_KEY, pw); }catch(err){}
+            closePw();
+            applyLockUi();
+            render();
+          }else{
+            password = pw;
+            try{ sessionStorage.setItem(PW_KEY, pw); }catch(err){}
+            closePw();
+            applyLockUi();
+            await refreshAll();
+          }
+        }else if(res.status === 401 && edit){
           closePw();
-          applyLockUi();
-          render();
-        }else if(res.status === 401){
+          lock();
+        }else if(res.status === 401 || res.status === 403){
           ui.pwError.textContent = "Heslo nesouhlasí, zkuste to znovu.";
         }else{
           const j = await res.json().catch(() => ({}));
@@ -752,7 +791,7 @@
     }
 
     function openModal(id){
-      if(!isUnlocked()){ openPw(); return; }
+      if(!isUnlocked()){ openPw("edit"); return; }
       editingId = id || null;
       const e = id ? entries.find(x => x.id === id) : null;
       ui.modalTitle.textContent = e ? "Upravit záznam" : "Nový záznam";
@@ -801,7 +840,8 @@
         await refreshAll();
       }catch(err){
         ui.formError.textContent = err.message;
-        if(!isUnlocked()){ closeModal(); openPw(); }
+        if(!isOpen()){ closeModal(); }
+        else if(!isUnlocked()){ closeModal(); openPw("edit"); }
       }finally{
         ui.btnSave.disabled = false;
       }
@@ -818,18 +858,20 @@
         await refreshAll();
       }catch(err){
         if(ui.modalBackdrop.classList.contains("show")) ui.formError.textContent = err.message;
-        else showStatus("error", err.message, false);
-        if(!isUnlocked()){ closeModal(); openPw(); }
+        else if(isUnlocked()) showStatus("error", err.message, false);
+        if(isOpen() && !isUnlocked()){ closeModal(); openPw("edit"); }
       }
     }
 
     // ---------- events ----------
-    ui.btnUnlock.addEventListener("click", openPw);
     ui.btnLock.addEventListener("click", lock);
+    ui.btnEdit.addEventListener("click", () => openPw("edit"));
+    ui.btnEndEdit.addEventListener("click", endEdit);
+    // In "edit" mode the password dialog can simply be closed; in "view" mode "Zpět" goes to the portal.
+    ui.pwClose.addEventListener("click", (e) => { if(pwMode === "edit"){ e.preventDefault(); closePw(); } });
+    ui.pwBackdrop.addEventListener("click", (e) => { if(e.target === ui.pwBackdrop && pwMode === "edit") closePw(); });
     ui.btnAdd.addEventListener("click", () => openModal(null));
     ui.pwForm.addEventListener("submit", submitPw);
-    ui.pwClose.addEventListener("click", closePw);
-    ui.pwBackdrop.addEventListener("click", (e) => { if(e.target === ui.pwBackdrop) closePw(); });
     ui.signSegment.addEventListener("click", (e) => { const b = e.target.closest("button"); if(b) setSign(Number(b.dataset.sign)); });
     ui.mAmount.addEventListener("input", syncSignFromInput);
     ui.btnCloseModal.addEventListener("click", closeModal);
@@ -850,12 +892,13 @@
       if(e.key !== "Escape") return;
       if(ui.cfBackdrop.classList.contains("show")){ closeConfirm(false); return; }
       if(ui.modalBackdrop.classList.contains("show")) closeModal();
-      if(ui.pwBackdrop.classList.contains("show")) closePw();
+      if(ui.pwBackdrop.classList.contains("show") && pwMode === "edit") closePw();
     });
     document.addEventListener("visibilitychange", () => { if(document.visibilityState === "visible") refreshAll(); });
 
     applyLockUi();
-    refreshAll();
+    if(isOpen()) refreshAll();
+    else openPw("view");
   </script>
 </body>
 </html>

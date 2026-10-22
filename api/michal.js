@@ -1,7 +1,8 @@
-// Write endpoint for the "Michal" app.
-// The browser can only READ michal_entries (Supabase RLS). Every change goes through here:
-// the password is checked against the MICHAL_PASSWORD env var and the write is done
-// with the secret key from SUPABASE_SECRET_KEY, which never leaves the server.
+// Backend for the "Michal" app. Two passwords (env vars on Vercel):
+//   MICHAL_PASSWORD      – opens the app (read the entries)
+//   MICHAL_EDIT_PASSWORD – additionally needed to add / change / delete entries
+// Every read and write goes through here; Supabase is called with the secret key
+// from SUPABASE_SECRET_KEY, which never leaves the server.
 
 const crypto = require("crypto");
 
@@ -18,6 +19,18 @@ function sameSecret(a, b) {
 }
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+async function supabaseList(key) {
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/${TABLE}?select=id,entry_date,amount,note&order=entry_date.desc,created_at.desc`,
+    { headers: { apikey: key, Authorization: `Bearer ${key}` } }
+  );
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`Supabase ${res.status}: ${text}`);
+  }
+  return res.json();
+}
 
 async function supabase(path, options, key) {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
@@ -51,6 +64,7 @@ module.exports = async (req, res) => {
   }
 
   const PASSWORD = process.env.MICHAL_PASSWORD;
+  const EDIT_PASSWORD = process.env.MICHAL_EDIT_PASSWORD;
   const KEY = process.env.SUPABASE_SECRET_KEY;
   if (!PASSWORD || !KEY) {
     res.status(500).json({ error: "Server není nastavený (chybí MICHAL_PASSWORD nebo SUPABASE_SECRET_KEY)." });
@@ -71,9 +85,29 @@ module.exports = async (req, res) => {
 
   const { action, entry } = body;
 
+  const WRITE_ACTIONS = ["verifyEdit", "insert", "update", "delete"];
+  if (WRITE_ACTIONS.includes(action)) {
+    if (!EDIT_PASSWORD) {
+      res.status(500).json({ error: "Server není nastavený (chybí MICHAL_EDIT_PASSWORD)." });
+      return;
+    }
+    if (!sameSecret(body.editPassword || "", EDIT_PASSWORD)) {
+      await sleep(800);
+      res.status(403).json({ error: "Heslo pro úpravy nesouhlasí." });
+      return;
+    }
+  }
+
   try {
-    if (action === "verify") {
+    if (action === "verify" || action === "verifyEdit") {
       res.status(200).json({ ok: true });
+      return;
+    }
+
+    if (action === "list") {
+      const rows = await supabaseList(KEY);
+      res.setHeader("Cache-Control", "no-store");
+      res.status(200).json({ rows });
       return;
     }
 
@@ -103,6 +137,6 @@ module.exports = async (req, res) => {
     res.status(400).json({ error: "Neznámá akce." });
   } catch (e) {
     console.error("api/michal:", e);
-    res.status(500).json({ error: "Uložení do databáze se nepovedlo." });
+    res.status(500).json({ error: action === "list" ? "Načtení dat se nepovedlo." : "Uložení do databáze se nepovedlo." });
   }
 };
